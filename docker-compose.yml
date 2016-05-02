@@ -1,0 +1,11 @@
+server:
+  build: .
+  command: evennia start -i --settings=conf/dev/settings.py
+  volumes:
+    - ./:/opt/eldennia/
+  ports:
+    - 4000:4000
+    - 8000:8000
+    - 4001:4001
+    - 8021:8021
+    - 8022:8022
