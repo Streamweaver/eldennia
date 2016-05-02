@@ -1,8 +1,10 @@
 server:
   build: .
-  command: evennia start -i --settings=conf/dev/settings.py
+  container_name: eldennia
   volumes:
     - ./:/opt/eldennia/
+  working_dir: /opt/eldennia
+  command: start -i
   ports:
     - 4000:4000
     - 8000:8000
