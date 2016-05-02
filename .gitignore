@@ -24,11 +24,11 @@ __pycache__
 *.pid
 *.restart
 *.db3
+.DS_Store
 
 # Installation-specific.
 # For group efforts, comment out some or all of these.
 server/conf/settings.py
-*.db3
 server/logs/*.log.*
 web/static/*
 web/media/*
