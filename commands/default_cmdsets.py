@@ -15,6 +15,8 @@ own cmdsets by inheriting from them or directly from `evennia.CmdSet`.
 """
 
 from evennia import default_cmds
+from commands.local_commands import CmdAbilities
+from commands import default
 
 class CharacterCmdSet(default_cmds.CharacterCmdSet):
     """
@@ -33,6 +35,20 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         # any commands you add below will overload the default ones.
         #
 
+        # Overridden commands
+        self.add(default.CmdLook)
+        self.add(default.CmdHome)
+        self.add(default.CmdInventory)
+        self.add(default.CmdPose)
+        self.add(default.CmdNick)
+        self.add(default.CmdDesc)
+        self.add(default.CmdGet)
+        self.add(default.CmdDrop)
+        self.add(default.CmdGive)
+        self.add(default.CmdSay)
+        self.add(default.CmdAccess)
+        # Local Commands
+        self.add(CmdAbilities())
 
 class PlayerCmdSet(default_cmds.PlayerCmdSet):
     """
