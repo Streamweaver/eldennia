@@ -1,4 +1,4 @@
-# Version 0.1-dev
+# Version 0.0-base
 # DO NOT RUN THIS AS PRODUCTION
 FROM streamweaver/evennia
 MAINTAINER Scott Turnbull "streamweaver@gmail.com"
