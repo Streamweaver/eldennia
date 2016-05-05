@@ -1,5 +1,10 @@
 from commands.command import MuxCommand
 
+"""
+Used for defining new local commands.
+"""
+
+# General Commands
 class CmdAbilities(MuxCommand):
     """
     List of abilities

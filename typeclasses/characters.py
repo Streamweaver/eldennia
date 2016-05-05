@@ -9,6 +9,7 @@ creation commands.
 """
 from evennia import DefaultCharacter
 
+# Not used yet but will likely use for help references later
 STATS = {
     'agl': {
         'name': 'Agility',
