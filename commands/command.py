@@ -136,6 +136,16 @@ class MuxCommand(default_cmds.MuxCommand):
         # printing the ingoing variables as a demo.
         super(MuxCommand, self).func()
 
+    def at_post_command(self):
+        "Adding status command prompt"
+        c = self.caller
+        stats = [
+            "%i HP" % c.health(),
+            "%i MN" % c.mana(),
+            "%i ST" % c.stamina()
+        ]
+        c.msg(prompt=", ".join(stats))
+
 class CmdAbilities(MuxCommand):
     """
     List of abilities
