@@ -16,6 +16,7 @@ own cmdsets by inheriting from them or directly from `evennia.CmdSet`.
 
 from evennia import default_cmds
 from commands.local_commands import CmdAbilities, CmdCheck
+from commands.combat import CmdAttack
 from commands import default
 
 class CharacterCmdSet(default_cmds.CharacterCmdSet):
@@ -50,6 +51,8 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         # Local Commands
         self.add(CmdAbilities())
         self.add(CmdCheck)
+        self.add(CmdAttack)
+
 
 class PlayerCmdSet(default_cmds.PlayerCmdSet):
     """
