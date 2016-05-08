@@ -8,50 +8,16 @@ creation commands.
 
 """
 from evennia import DefaultCharacter
+from evennia.contrib.dice import roll_dice
 
-# Not used yet but will likely use for help references later
-STATS = {
-    'agl': {
-        'name': 'Agility',
-        'default': 10,
-        'desc': "desc"
-    },
-    'end': {
-        'name': 'Endurance',
-        'default': 10,
-        'desc': "desc"
-    },
-    'int': {
-        'name': 'Intelligence',
-        'default': 10,
-        'desc': "desc"
-    },
-    'lck': {
-        'name': 'Luck',
-        'default': 10,
-        'desc': "desc"
-    },
-    'per': {
-        'name': 'Personality',
-        'default': 10,
-        'desc': "desc"
-    },
-    'spd': {
-        'name': 'Speed',
-        'default': 10,
-        'desc': "desc"
-    },
-    'str': {
-        'name': 'Strength',
-        'default': 10,
-        'desc': "desc"
-    },
-    'wil': {
-        'name': 'Willpower',
-        'default': 10,
-        'desc': "desc"
-    }
-}
+def _gen_stat():
+    """
+    Dirty method for random stat generation.
+
+    Returns: int between 2-12
+
+    """
+    return max(roll_dice(2, 6), roll_dice(2, 6))
 
 class Character(DefaultCharacter):
     """
@@ -75,52 +41,36 @@ class Character(DefaultCharacter):
     """
     def at_object_creation(self):
         # Basic Attributes
-        self.db.agl = 10
-        self.db.end = 10
-        self.db.int = 10
-        self.db.lck = 10
-        self.db.per = 10
-        self.db.spd = 10
-        self.db.str = 10
-        self.db.wil = 10
+        self.db.str = _gen_stat()
+        self.db.dex = _gen_stat()
+        self.db.end = _gen_stat()
+        self.db.int = _gen_stat()
+        self.db.edu = _gen_stat()
+        self.db.soc = _gen_stat()
 
-        # Static Attributes
-        self.db.level = 1
-        self.db.gold = 0
-
+        self.db.credits = 0
         # Derived Attributes
-        self.db.health = 1
-        self.db.wounds = 0
-        self.db.mana = 1
-        self.db.drain = 0
-        self.db.stamina = 1
-        self.db.fatigue = 0
+
 
     # Attributes
-    def agl(self):
+    def str(self):
         "Returns effective agility"
-        return int(self.db.agl)
+        return int(self.db.str)
+
+    def dex(self):
+        return int(self.db.dex)
 
     def end(self):
         return int(self.db.end)
 
     def int(self):
-        return int(self.db.end)
+        return int(self.db.int)
 
-    def lck(self):
-        return int(self.db.lck)
+    def edu(self):
+        return int(self.db.edu)
 
-    def per(self):
-        return int(self.db.per)
-
-    def spd(self):
-        return int(self.db.spd)
-
-    def str(self):
-        return int(self.db.str)
-
-    def wil(self):
-        return int(self.db.wil)
+    def soc(self):
+        return int(self.db.soc)
 
     # Derived Attributes
     def health(self):

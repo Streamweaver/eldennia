@@ -135,13 +135,4 @@ class MuxCommand(default_cmds.MuxCommand):
         # this can be removed in your child class, it's just
         # printing the ingoing variables as a demo.
         super(MuxCommand, self).func()
-
-    def at_post_cmd(self):
-        "Adding status command prompt"
-        c = self.caller
-        stats = [
-            "%i HP" % c.health(),
-            "%i MN" % c.mana(),
-            "%i ST" % c.stamina()
-        ]
-        c.msg(prompt=", ".join(stats))
+        pass # TODO prompt conditionals

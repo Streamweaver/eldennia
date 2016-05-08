@@ -15,7 +15,7 @@ own cmdsets by inheriting from them or directly from `evennia.CmdSet`.
 """
 
 from evennia import default_cmds
-from commands.local_commands import CmdAbilities
+from commands.local_commands import CmdAbilities, CmdCheck
 from commands import default
 
 class CharacterCmdSet(default_cmds.CharacterCmdSet):
@@ -49,6 +49,7 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(default.CmdAccess)
         # Local Commands
         self.add(CmdAbilities())
+        self.add(CmdCheck)
 
 class PlayerCmdSet(default_cmds.PlayerCmdSet):
     """
