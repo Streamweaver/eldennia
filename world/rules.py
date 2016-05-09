@@ -24,7 +24,11 @@ def simple_check(attrib, mods=0):
     """
     Produces a task check for attribute value with mods against standard value of 8
 
-    Returns: Boolean
+    Args:
+        attrib (Int): Attribute value
+        mods (Int):  modifier for basic roll
+
+    Returns: Boolean of feather successful roll.
 
     """
     return roll_dice(2,6) + get_mod(attrib) + mods > 7
@@ -44,17 +48,15 @@ def resolve_combat_round(combat_handler):
     melee_bonus = defaultdict(int)
     ranged_attacks = defaultdict(list)
     melee_attacks = defaultdict(list)
-    moves = {}
+    moves = defaultdict(list)
 
     # Iterate over character action queues and sort by resolution.
     for dbref, queue in ch.db.turn_actions.iteritems():
         for item in queue:
             action, char, target = item
             # Resolve position Changes in order Kite and Rush
-            if action == 'retreat':
-                moves[dbref] = resolve_move(ch, char, target, -1)
-            if action == 'rush':
-                moves[dbref] = resolve_move(ch, char, target, 1)
+            if action == 'retreat' or action == 'rush':
+                moves[dbref].append(item)
             # Add ranged bonus
             if action == 'aim':
                 ranged_bonus[char.id] += 1
@@ -72,6 +74,7 @@ def resolve_combat_round(combat_handler):
             if action == 'strike':
                 melee_attacks[char.id].append((char, target))
 
+    # resolve_moves
     # # resolve ranged
     # for i in range(3): # through each of 3 max rounds
     #     for attack in ranged_attacks.values():
@@ -91,16 +94,26 @@ def resolve_combat_round(combat_handler):
     #             else:
     #                 ch.msg_all("%s swings and misses %s" % (attacker, defender))
 
-def resolve_move(ch, char, target, mv=1):
+def resolve_moves(ch, moves):
     """
-    Resolves the action of a single move between char and target in a combat.
+    Resolves all move actions from a single turn, updating relative positions and providing descriptions for actual
+    relative changes.
 
     Args:
         ch (CombatHandler): Combat Handler to move in.
-        char (Character): Character moving
-        target (Character): Target to move against.
-        mv (Int): 1 for foward -1 for back
+        mv (List): List of Tuple of actions (String), char (Character), target (Character)
 
-    Returns: Boolean of weather move actually happened.
+    Returns: List of Strings of relative move changes.
 
     """
+    # Calculate results of each move attempt
+    results = defaultdict(lambda: defaultdict(int))
+    for action, char, target in moves:
+        i = 1 if action == "rush" else -1
+        if simple_check(char.dex()):
+            results[char.id][target.id] += i
+    # Sum the actual changes
+    # changes
+    # update ch positions
+    # return string list of move changes
+    return results
