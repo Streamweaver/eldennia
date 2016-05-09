@@ -37,37 +37,24 @@ def resolve_combat_round(combat_handler):
 
     """
     ch = combat_handler
+    # Actions
     ranged_defense = defaultdict(int)
     ranged_bonus = defaultdict(int)
     melee_defense = defaultdict(int)
     melee_bonus = defaultdict(int)
     ranged_attacks = defaultdict(list)
     melee_attacks = defaultdict(list)
+    moves = {}
 
     # Iterate over character action queues and sort by resolution.
     for dbref, queue in ch.db.turn_actions.iteritems():
         for item in queue:
             action, char, target = item
             # Resolve position Changes in order Kite and Rush
-            if action == 'kite':
-                if simple_check(char.dex()):
-                    ok = ch.adjust_position(char, target, 1)
-                    if ok:
-                        ch.msg_all("%s moves away from %s" % (char, target))
-                    else:
-                        ch.msg_all("%s is as far away from %s at possible."
-                                   % (char, target))
-                else:
-                    ch.msg_all("%s is unable to move away from %s" % (char, target))
+            if action == 'retreat':
+                moves[dbref] = resolve_move(ch, char, target, -1)
             if action == 'rush':
-                if simple_check(char.dex()):
-                    ok = ch.adjust_position(char, target, -1)
-                    if ok:
-                        ch.msg_all("%s moves closer to %s" % (char, target))
-                    else:
-                        ch.msg_all("%s is as close as possible to %s" % (char, target))
-                else:
-                    ch.msg_all("%s fails to close with %s" % (char, target))
+                moves[dbref] = resolve_move(ch, char, target, 1)
             # Add ranged bonus
             if action == 'aim':
                 ranged_bonus[char.id] += 1
@@ -85,21 +72,35 @@ def resolve_combat_round(combat_handler):
             if action == 'strike':
                 melee_attacks[char.id].append((char, target))
 
-    # resolve ranged
-    for i in range(3): # through each of 3 max rounds
-        for attack in ranged_attacks.values():
-            for attacker, defender in attack[i] if len(attack) > i else None:
-                ok = simple_check(attacker.dex(), ranged_defense[defender.id])
-                if ok:
-                    ch.msg_all("%s shoots and hits %s" % (attacker, defender))
-                else:
-                    ch.msg_all("%s shoots and misses %s" % (attacker, defender))
-    # resolve melee
-    for i in range(3):
-        for attack in melee_attacks.values():
-            for attacker, defender in attack[i] if len(attack) > i else None:
-                ok = simple_check(attacker.str(), melee_defense[defender.id])
-                if ok:
-                    ch.msg_all("%s swings and hits %s" % (attacker, defender))
-                else:
-                    ch.msg_all("%s swings and misses %s" % (attacker, defender))
+    # # resolve ranged
+    # for i in range(3): # through each of 3 max rounds
+    #     for attack in ranged_attacks.values():
+    #         for attacker, defender in attack[i] if len(attack) > i else None:
+    #             ok = simple_check(attacker.dex(), ranged_defense[defender.id])
+    #             if ok:
+    #                 ch.msg_all("%s shoots and hits %s" % (attacker, defender))
+    #             else:
+    #                 ch.msg_all("%s shoots and misses %s" % (attacker, defender))
+    # # resolve melee
+    # for i in range(3):
+    #     for attack in melee_attacks.values():
+    #         for attacker, defender in attack[i] if len(attack) > i else None:
+    #             ok = simple_check(attacker.str(), melee_defense[defender.id])
+    #             if ok:
+    #                 ch.msg_all("%s swings and hits %s" % (attacker, defender))
+    #             else:
+    #                 ch.msg_all("%s swings and misses %s" % (attacker, defender))
+
+def resolve_move(ch, char, target, mv=1):
+    """
+    Resolves the action of a single move between char and target in a combat.
+
+    Args:
+        ch (CombatHandler): Combat Handler to move in.
+        char (Character): Character moving
+        target (Character): Target to move against.
+        mv (Int): 1 for foward -1 for back
+
+    Returns: Boolean of weather move actually happened.
+
+    """
