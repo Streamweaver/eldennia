@@ -1,5 +1,5 @@
 from random import randint
-from collections import defaultdict
+from enum import IntEnum
 
 
 """
@@ -13,8 +13,14 @@ class ActionQueueException(Exception):
     def __init__(self,*args,**kwargs):
         Exception.__init__(self,*args,**kwargs)
 
-class Ranges:
-    Personal, Close, Short, Medium, Long, Far, Distant = range(7)
+class Ranges(IntEnum):
+    Personal = 0
+    Close = 1
+    Short = 2
+    Medium = 3
+    Long = 4
+    Far = 5
+    Distant = 6
 
 class CombatHandler(DefaultScript):
     """
@@ -29,7 +35,7 @@ class CombatHandler(DefaultScript):
         self.persistant = True
 
         self.db.characters = {}
-        self.db.positions = defaultdict(defaultdict)
+        self.db.positions = {}
         self.db.turn_actions = {}
 
     def _init_character(self, character):
@@ -60,10 +66,11 @@ class CombatHandler(DefaultScript):
         for combatant in self.db.positions.values():
             del combatant[dbref]
         character.cmdset.delete("commands.combat.CombatCmdSet")
+        character.msg("You are no longer in combat.")
 
     def at_start(self):
         "called at start and after server reboot"
-        for character in self.db.characters.value():
+        for character in self.db.characters.values():
             self._init_character(character)
 
     def at_stop(self):
@@ -87,13 +94,15 @@ class CombatHandler(DefaultScript):
     def add_character(self, character):
         "Add character to combat"
         dbref = character.id
+        self.db.positions[dbref] = {}
         for combatant in self.db.characters.values():
             pos = randint(0, 6)
-            self.db.positions[dbref][combatant] = pos
-            self.db.posotions[combatant][dbref] = pos
+            self.db.positions[dbref][combatant.id] = pos
+            self.db.positions[combatant.id][dbref] = pos
         self.db.characters[dbref] = character
         self.db.turn_actions[dbref] = []
         self._init_character(character)
+        self.msg_positions(character)
 
     def remove_character(self, character):
         if character.id in self.db.characters:
@@ -132,16 +141,16 @@ class CombatHandler(DefaultScript):
             target: character object
 
         """
-        dbref = character.id
-        count = len(self.db.turn_actions[dbref])
-        if 0 <= count <= 2: # only allow 3 actions
-            self.db.turn_actions[dbref] = (action, character, target)
+        queue = self.db.turn_actions[character.id]
+        if 0 <= len(queue) <= 2: # only allow 3 actions
+            queue.append((action, character, target))
+            self._check_end_turn() # check if everyone has entered commands
+            return True
         else:
             return False
-        return True
 
-    def check_end_turn(self):
-        if all(count > 2 for count in len(self.db.turn_actions.values())):
+    def _check_end_turn(self):
+        if all(len(actions) > 2 for actions in self.db.turn_actions.values()):
             self.at_repeat("endturn")
 
     def end_turn(self):
@@ -152,6 +161,25 @@ class CombatHandler(DefaultScript):
             self.stop()
         else:
             # clear character turn actions
+            self.msg_all("{M Next turn begins!  Choose 3 actions ...")
             for character in self.db.characters.values():
                 self.db.turn_actions[character.id] = []
-            self.msg_all("Next turn begins ...")
+                self.msg_positions(character)
+
+    def msg_positions(self, character):
+        """
+        Messages each combatant with the names of other combatants and their relative positions.
+
+        Args:
+            charid: string dbref of character to msg
+
+        """
+        # positions = [[self.db.characters[tid], pos] for tid, pos in self.db.positions[character.id].iteritems()]
+        positions = []
+        for tid, pos in self.db.positions[character.id].iteritems():
+            if tid != character.id:
+                positions.append("%s(%i)" % (self.db.characters[tid], pos))
+        if positions:
+            character.msg("Targets(Range): " + ", ".join(positions))
+
+

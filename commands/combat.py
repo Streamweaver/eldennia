@@ -26,15 +26,17 @@ class CmdAttack(MuxCommand):
         # set up combat
         if target.ndb.combat_handler:
             # target is already in combat - join it
-            target.ndb.combat_handler.add_character(self.caller)
             target.ndb.combat_handler.msg_all("%s joins combat!" % self.caller)
+            target.ndb.combat_handler.add_character(self.caller)
+
         else:
             # create a new combat handler
-            chandler = create_script("combat_handler.CombatHandler")
-            chandler.add_character(self.caller)
-            chandler.add_character(target)
             self.caller.msg("You attack %s! You are in combat." % target)
             target.msg("%s attacks you! You are in combat." % self.caller)
+            ch = create_script("combat_handler.CombatHandler")
+            ch.add_character(self.caller)
+            ch.add_character(target)
+            ch.msg_positions(self.caller) # First char added doesn't get anyone's position since they don't exist
 
 class CmdRush(MuxCommand):
     """
