@@ -28,7 +28,7 @@ class CombatHandler(DefaultScript):
     """
 
     def at_script_creation(self):
-        self.key = "cmbt_hdlr_%s" % hex(randint(1, 10000))
+        self.key = "cbt_hlr_%s" % hex(randint(1, 10000))
         self.des = "handles combat"
         self.interval = 60 * 1 # one min timeout
         self.start_delay = True
