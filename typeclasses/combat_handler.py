@@ -1,26 +1,21 @@
 from random import randint
 from enum import IntEnum
 
-
-"""
-This implements a simple combat handler based on the one in the evennia tutorial.
-
-This is very early and experimental.
-"""
 from evennia import DefaultScript
 
-class ActionQueueException(Exception):
-    def __init__(self,*args,**kwargs):
-        Exception.__init__(self,*args,**kwargs)
-
-class Ranges(IntEnum):
+class Distance(IntEnum):
     Personal = 0
     Close = 1
     Short = 2
     Medium = 3
     Long = 4
     Far = 5
-    Distant = 6
+    Extreme = 6
+
+class Direction(IntEnum):
+    Back = -1
+    Steady = 0
+    Forward = 1
 
 class CombatHandler(DefaultScript):
     """
@@ -123,7 +118,7 @@ class CombatHandler(DefaultScript):
             tar: target object
             pos: int of position adjustment
 
-        Return: Boolean - true if changed, false if not
+        Return: Int of position change
         """
         updated = self.db.positions[char.id][tar.id] + pos
         if 0 <= updated <= 6:
@@ -171,7 +166,7 @@ class CombatHandler(DefaultScript):
         Messages each combatant with the names of other combatants and their relative positions.
 
         Args:
-            charid: string dbref of character to msg
+            character (Character): char object to message
 
         """
         # positions = [[self.db.characters[tid], pos] for tid, pos in self.db.positions[character.id].iteritems()]

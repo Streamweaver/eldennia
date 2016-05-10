@@ -42,6 +42,7 @@ def resolve_combat_round(combat_handler):
     """
     ch = combat_handler
     # Actions
+    general_defense = defaultdict(int)
     ranged_defense = defaultdict(int)
     ranged_bonus = defaultdict(int)
     melee_defense = defaultdict(int)
@@ -57,24 +58,24 @@ def resolve_combat_round(combat_handler):
             # Resolve position Changes in order Kite and Rush
             if action == 'retreat' or action == 'rush':
                 moves[dbref].append(item)
-            # Add ranged bonus
-            if action == 'aim':
+            if action == 'aim': # Add automatic ranged bonuses
                 ranged_bonus[char.id] += 1
-            # Add melee bonus
-            # Add ranged defense
-            if action == 'cover':
+            if action == 'cover': # Add automatic ranged defenses
                 ranged_defense[char.id] += 1
-            # Add Melee defense
-            if action == 'block':
+            if action == 'block':# Add automatic Melee defense
                 melee_defense[char.id] += 1
-            # Add ranged attack
-            if action == 'shoot':
+            if action == 'shoot': # Queue a ranged attack
                 ranged_attacks[char.id].append((char, target))
-            # Add melee attack
-            if action == 'strike':
+            if action == 'strike': # Queue melee attack
                 melee_attacks[char.id].append((char, target))
+            if action == 'dodge': # Add a general defense if dex check
+                general_defense[char.id] += 1 if simple_check(char.dex(), -2) else 0
 
-    # resolve_moves
+    # resolve moves, update positions and build feedback
+    move_feedback = resolve_moves(ch, moves)
+
+    # if melee attacks that can't be made, convert to dodge.
+    melee_to_dodge(ch, melee_attacks, general_defense)
     # # resolve ranged
     # for i in range(3): # through each of 3 max rounds
     #     for attack in ranged_attacks.values():
@@ -93,27 +94,62 @@ def resolve_combat_round(combat_handler):
     #                 ch.msg_all("%s swings and hits %s" % (attacker, defender))
     #             else:
     #                 ch.msg_all("%s swings and misses %s" % (attacker, defender))
+def resolve_ranged_attacks():
+    pass
+def resolve_melee_attacks():
+    pass
+def melee_to_dodge(ch, melee_attacks, general_defense):
+    """
+    Any queue melee attacks on out of range opponents are converted to dodges.
+    Args:
+        ch (CombatHandler): ch instance for fight.
+        melee_attacks (dict): dbref: [(char, target)] of character making attack.
+        general_defense (defaultdict(int)):  dbref: int of char and their defense bonus
+
+    Return:  List of strings with dodge feedback.
+
+    """
+    feedback = []
+    for dbref, attacks in melee_attacks.iteritems():
+        for attack in attacks: # Iterate through attacks
+            char, target = attack
+            if ch.db.positions[char.id][target.id] > 1: # if target too far for melee ...
+                attacks.remove(attack) # ... remove attack
+                general_defense[char.id] += 1 if simple_check(char.dex(), -2) else 0 # ... attemp dodge
+                feedback.append("%s is too far to strike %s and tries to dodge!" % (char, target)) # ... and let us know
+    return feedback
 
 def resolve_moves(ch, moves):
     """
-    Resolves all move actions from a single turn, updating relative positions and providing descriptions for actual
-    relative changes.
+    Resolves all move actions from a single turn.  Does a simple dex check for each character attempting move to see if
+    successful, each combantant moves compared and aggregate constructed.
 
     Args:
-        ch (CombatHandler): Combat Handler to move in.
-        mv (List): List of Tuple of actions (String), char (Character), target (Character)
+        ch (CombatHandler): Combat Handler to update character position.
+        mv (List): List of Tuple of actions (String), char (Character), target (Character) of moves to resolve.
 
     Returns: List of Strings of relative move changes.
 
     """
     # Calculate results of each move attempt
     results = defaultdict(lambda: defaultdict(int))
+
+    # Iterate over each move attempt.
     for action, char, target in moves:
-        i = 1 if action == "rush" else -1
-        if simple_check(char.dex()):
-            results[char.id][target.id] += i
-    # Sum the actual changes
-    # changes
-    # update ch positions
-    # return string list of move changes
-    return results
+        i = 1 if action == "rush" else -1 # set distance change based on type of move.
+        chng = i if simple_check(char.dex()) else 0 # actual change value if success, 0 if failure
+        if chng: # only call if actual value changes
+            if ch.adjust_position(char, target, chng):
+                chng = 0 # Zero of method call fails as actual change would violate limits. i.e. no actual change.
+        keys = sorted([char.id, target.id]) # create a simple index for a deduped list of total changes.
+        results[keys[0]][keys[1]] += chng # this ensures same char combinations always added together once
+
+    # Create the feedback strings.
+    feedback = []
+    directions = ['move closer', 'circle each other', 'move apart', ]
+    for cid, mvs in results.iteritems():
+        for tid, chng in mvs.iteritems():
+            char = ch.db.characters[cid]
+            target = ch.db.characters[tid]
+            feedback.append("%s and %s %s" % (char, target, directions[chng]))
+    return (feedback)

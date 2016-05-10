@@ -2,7 +2,12 @@ from evennia.utils.test_resources import EvenniaTest
 from typeclasses.characters import Character
 from typeclasses.rooms import Room
 from mock import Mock
-from typeclasses.combat_handler import Ranges
+from typeclasses.combat_handler import Distance
+
+class DistanceTestCase(EvenniaTest):
+    def test_basic(self):
+        self.assertEqual(Distance(1), 1)
+        self.assertEqual(Distance(1).name, "Close")
 
 class CombatHandlerTestCase(EvenniaTest):
     character_typeclass = Character
@@ -85,7 +90,7 @@ class CombatHandlerTestCase(EvenniaTest):
 
         _same_pos(pos1)
 
-        move1 = 1 if pos1 != Ranges.Distant else - 1
+        move1 = 1 if pos1 != Distance.Extreme else - 1
         ch.adjust_position(c1, c2, move1)
 
         self.assertEquals(pos1 + move1, ch.db.positions[c1.id][c2.id])
