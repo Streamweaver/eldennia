@@ -98,6 +98,7 @@ def resolve_ranged_attacks():
     pass
 def resolve_melee_attacks():
     pass
+
 def melee_to_dodge(ch, melee_attacks, general_defense):
     """
     Any queue melee attacks on out of range opponents are converted to dodges.
@@ -106,18 +107,23 @@ def melee_to_dodge(ch, melee_attacks, general_defense):
         melee_attacks (dict): dbref: [(char, target)] of character making attack.
         general_defense (defaultdict(int)):  dbref: int of char and their defense bonus
 
-    Return:  List of strings with dodge feedback.
+    Return:  (Tuple) (
+            List of strings with dodge feedback.
+            Defaultdict(list) of actual melee attacks
+            )
 
     """
     feedback = []
+    remaining_attacks = defaultdict(list)
     for dbref, attacks in melee_attacks.iteritems():
         for attack in attacks: # Iterate through attacks
-            char, target = attack
-            if ch.db.positions[char.id][target.id] > 1: # if target too far for melee ...
-                attacks.remove(attack) # ... remove attack
-                general_defense[char.id] += 1 if simple_check(char.dex(), -2) else 0 # ... attemp dodge
-                feedback.append("%s is too far to strike %s and tries to dodge!" % (char, target)) # ... and let us know
-    return feedback
+            atkr, dfndr = attack
+            if ch.db.positions[atkr.id][dfndr.id] > 1: # if target too far for melee ...
+                general_defense[atkr.id] += 1 if simple_check(atkr.dex(), -2) else 0 # ... attemp dodge
+                feedback.append("%s is too far to strike %s and tries to dodge!" % (atkr, dfndr)) # ... and let us know
+            else:
+                remaining_attacks[dbref].append(attack)
+    return (feedback, remaining_attacks)
 
 def resolve_moves(ch, moves):
     """

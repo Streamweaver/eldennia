@@ -38,11 +38,13 @@ class RevolveTestCase(EvenniaTest):
 
         attacks = defaultdict(list)
         general_defense = defaultdict(int)
-        ch.adjust_position(c1, c2, 2) # Make them far apart
+
+        pos = 6 - ch.db.positions[c1.id][c2.id]
+        ch.adjust_position(c1, c2, pos) # Make them far apart
+
         for i in range(3):
             attacks[c1.id].append((c1, c2))
             attacks[c2.id].append((c2, c1))
-        fb = rules.melee_to_dodge(ch, attacks, general_defense)
-        exp = 6 - len(attacks[c1.id]) + len(attacks[c2.id])
-        print(general_defense)
+        fb, atks = rules.melee_to_dodge(ch, attacks, general_defense)
+        exp = 6 - len(atks[c1.id]) + len(atks[c2.id])
         self.assertEquals(len(fb), exp)
