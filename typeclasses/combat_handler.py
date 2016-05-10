@@ -179,5 +179,3 @@ class CombatHandler(DefaultScript):
                 positions.append("%s(%s)" % (self.db.characters[tid], dst))
         if positions:
             character.msg("Target(Range): " + ", ".join(positions))
-
-
