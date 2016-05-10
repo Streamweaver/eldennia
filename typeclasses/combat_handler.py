@@ -3,6 +3,8 @@ from enum import IntEnum
 
 from evennia import DefaultScript
 
+from world import rules
+
 class Distance(IntEnum):
     Personal = 0
     Close = 1
@@ -25,7 +27,7 @@ class CombatHandler(DefaultScript):
     def at_script_creation(self):
         self.key = "cbt_hlr_%s" % hex(randint(1, 10000))
         self.des = "handles combat"
-        self.interval = 60 * 1 # one min timeout
+        self.interval = 60 * 2 # one min timeout
         self.start_delay = True
         self.persistant = True
 
@@ -145,12 +147,12 @@ class CombatHandler(DefaultScript):
             return False
 
     def _check_end_turn(self):
-        if all(len(actions) > 2 for actions in self.db.turn_actions.values()):
+        if all(len(actions) == 3 for actions in self.db.turn_actions.values()):
             self.at_repeat("endturn")
 
     def end_turn(self):
 
-        # resolve_combat_round(self)
+        rules.resolve_combat_round(self)
         if len(self.db.characters) < 2:
             self.msg_all("Combat has ended.")
             self.stop()
@@ -173,8 +175,9 @@ class CombatHandler(DefaultScript):
         positions = []
         for tid, pos in self.db.positions[character.id].iteritems():
             if tid != character.id:
-                positions.append("%s(%i)" % (self.db.characters[tid], pos))
+                dst = "%s" % Distance(pos).name
+                positions.append("%s(%s)" % (self.db.characters[tid], dst))
         if positions:
-            character.msg("Targets(Range): " + ", ".join(positions))
+            character.msg("Target(Range): " + ", ".join(positions))
 
 

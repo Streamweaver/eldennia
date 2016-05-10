@@ -49,7 +49,7 @@ def resolve_combat_round(combat_handler):
     melee_bonus = defaultdict(int)
     ranged_attacks = defaultdict(list)
     melee_attacks = defaultdict(list)
-    moves = defaultdict(list)
+    moves = []
 
     # Iterate over character action queues and sort by resolution.
     for dbref, queue in ch.db.turn_actions.iteritems():
@@ -57,7 +57,7 @@ def resolve_combat_round(combat_handler):
             action, char, target = item
             # Resolve position Changes in order Kite and Rush
             if action == 'retreat' or action == 'rush':
-                moves[dbref].append(item)
+                moves.append(item)
             if action == 'aim': # Add automatic ranged bonuses
                 ranged_bonus[char.id] += 1
             if action == 'cover': # Add automatic ranged defenses
@@ -72,28 +72,14 @@ def resolve_combat_round(combat_handler):
                 general_defense[char.id] += 1 if simple_check(char.dex(), -2) else 0
 
     # resolve moves, update positions and build feedback
-    move_feedback = resolve_moves(ch, moves)
+    for msg in set(resolve_moves(ch, moves)):
+        ch.msg_all(msg)
 
     # if melee attacks that can't be made, convert to dodge.
-    melee_to_dodge(ch, melee_attacks, general_defense)
-    # # resolve ranged
-    # for i in range(3): # through each of 3 max rounds
-    #     for attack in ranged_attacks.values():
-    #         for attacker, defender in attack[i] if len(attack) > i else None:
-    #             ok = simple_check(attacker.dex(), ranged_defense[defender.id])
-    #             if ok:
-    #                 ch.msg_all("%s shoots and hits %s" % (attacker, defender))
-    #             else:
-    #                 ch.msg_all("%s shoots and misses %s" % (attacker, defender))
-    # # resolve melee
-    # for i in range(3):
-    #     for attack in melee_attacks.values():
-    #         for attacker, defender in attack[i] if len(attack) > i else None:
-    #             ok = simple_check(attacker.str(), melee_defense[defender.id])
-    #             if ok:
-    #                 ch.msg_all("%s swings and hits %s" % (attacker, defender))
-    #             else:
-    #                 ch.msg_all("%s swings and misses %s" % (attacker, defender))
+    mfb, melee_attacks = melee_to_dodge(ch, melee_attacks, general_defense)
+    for msg in mfb:
+        ch.msg_all(msg)
+
 def resolve_ranged_attacks():
     pass
 def resolve_melee_attacks():

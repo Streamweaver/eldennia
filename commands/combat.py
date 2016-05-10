@@ -4,13 +4,12 @@ from evennia import CmdSet, default_cmds
 
 class CmdAttack(MuxCommand):
     """
-    initiates combat
+    Initiates combat with target
 
     Usage:
       attack <target>
 
-    This will initiate combat with <target>. If <target is
-    already in combat, you will join the combat.
+    This will initiate combat with <target>. Joins combat if you or <target> already in combat.
     """
     key = "attack"
     help_category = "General"
@@ -50,14 +49,16 @@ class CmdAttack(MuxCommand):
             ch.add_character(target)
             ch.msg_positions(self.caller) # First char added doesn't get anyone's position since they don't exist
 
+# Move Actions
 class CmdRush(MuxCommand):
     """
-    Approach target.
+    Move closer to target.
 
     Usage:
         rush <target>
 
-    Attempts to decreace range to target interval.
+    Dex check to move closer to target one interval.
+
     """
     key = "rush"
     aliases = ["advance", "toward"]
@@ -71,7 +72,7 @@ class CmdRush(MuxCommand):
         if not target:
             return
 
-        ok = self.caller.ndb.combat_handler.add_action("rush",
+        ok = self.caller.ndb.combat_handler.add_action(self.key,
                                                        self.caller,
                                                        target)
         if ok:
@@ -81,12 +82,13 @@ class CmdRush(MuxCommand):
 
 class CmdRetreat(MuxCommand):
     """
-    Away from target.
+    Move away from target.
 
     Usage:
         retreat <target>
 
-    Attemps to increase range to target one interval.
+    Dex check to move away from target one interval.
+
     """
     key = "retreat"
     aliases = ["kite", "rtrt"]
@@ -99,13 +101,108 @@ class CmdRetreat(MuxCommand):
         target = self.caller.search(self.args)
         if not target:
             return
-        ok = self.caller.ndb.combat_handler.add_action("retreat",
+        ok = self.caller.ndb.combat_handler.add_action(self.key,
                                                        self.caller,
                                                        target)
         if ok:
             self.caller.msg("You try to move away from %s." % target)
         else:
             self.caller.msg("You can only queue 3 actions in a turn.")
+
+# Defensive Actions
+class CmdDodge(MuxCommand):
+    """
+    Attempt general defensive dodge against all attack types.
+
+    Usage:
+        dodge
+
+    Dex check -2 to add 1 to defense against melee and ranged.
+
+    """
+    key = "dodge"
+    aliases = ["duck",]
+    help_category = "combat"
+
+    def func(self):
+        ok = self.caller.ndb.combat_handler.add_action(self.key,
+                                                       self.caller,
+                                                       None)
+        if ok:
+            self.caller.msg("You try to dodge all attacks.")
+        else:
+            self.caller.msg("You can only queue 3 actions in a turn.")
+
+class CmdCover(MuxCommand):
+    """
+    Gain defense against ranged attacks.
+
+    Usage:
+        cover
+
+    Automatic +1 to ranged defense.
+
+    """
+    key = "cover"
+    aliases = ["cvr",]
+    help_category = "combat"
+
+    def func(self):
+        ok = self.caller.ndb.combat_handler.add_action(self.key,
+                                                       self.caller,
+                                                       None)
+        if ok:
+            self.caller.msg("You duck behind cover.")
+        else:
+            self.caller.msg("You can only queue 3 actions in a turn.")
+
+class CmdBlock(MuxCommand):
+    """
+    Gain defense against melee attacks.
+
+    Usage:
+        block
+
+    Automatic +1 to melee defense.
+
+    """
+    key = "block"
+    aliases = ["parry",]
+    help_category = "combat"
+
+    def func(self):
+        ok = self.caller.ndb.combat_handler.add_action(self.key,
+                                                       self.caller,
+                                                       None)
+        if ok:
+            self.caller.msg("You block incoming attacks.")
+        else:
+            self.caller.msg("You can only queue 3 actions in a turn.")
+
+# Attack bonus actions
+class CmdAim(MuxCommand):
+    """
+    Gain bonus ranged attacks.
+
+    Usage:
+        cover
+
+    Automatic +1 to ranged attacks.
+
+    """
+    key = "aim"
+    aliases = []
+    help_category = "combat"
+
+    def func(self):
+        ok = self.caller.ndb.combat_handler.add_action(self.key,
+                                                       self.caller,
+                                                       None)
+        if ok:
+            self.caller.msg("You take time to aim.")
+        else:
+            self.caller.msg("You can only queue 3 actions in a turn.")
+
 
 class CombatCmdSet(CmdSet):
     key = "combat_cmdset"
@@ -115,7 +212,11 @@ class CombatCmdSet(CmdSet):
 
     def at_cmdset_creation(self):
         self.add(CmdRush())
-        self.add(CmdRetreat)
+        self.add(CmdRetreat())
+        self.add(CmdDodge())
+        self.add(CmdCover())
+        self.add(CmdBlock())
+        self.add(CmdAim())
         # self.add(CmdDisengage())
         # self.add(CmdHelp())
         self.add(default_cmds.CmdPose())

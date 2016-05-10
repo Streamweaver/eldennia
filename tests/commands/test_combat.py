@@ -72,3 +72,51 @@ class CmdRetreatTestCase(CommandTest):
         for i in range(3):
             self.call(combat.CmdRetreat(), "%s" % c2, "You try to move away from %s." % c2)
         self.call(combat.CmdRetreat(), "%s" % c2, "You can only queue 3 actions in a turn.")
+
+class CmdDodgeTestCase(CommandTest):
+    character_typeclass = Character
+
+    def test_cmd(self):
+        c1 = self.char1
+        c2 = self.char2
+        c1.execute_cmd("attack %s" % c2)
+
+        for i in range(3):
+            self.call(combat.CmdDodge(), "", "You try to dodge all attacks.")
+        self.call(combat.CmdDodge(), "%s" % c2, "You can only queue 3 actions in a turn.")
+
+class CmdCoverTestCase(CommandTest):
+    character_typeclass = Character
+
+    def test_cmd(self):
+        c1 = self.char1
+        c2 = self.char2
+        c1.execute_cmd("attack %s" % c2)
+
+        for i in range(3):
+            self.call(combat.CmdCover(), "", "You duck behind cover.")
+        self.call(combat.CmdCover(), "%s" % c2, "You can only queue 3 actions in a turn.")
+
+class CmdBlockTestCase(CommandTest):
+    character_typeclass = Character
+
+    def test_cmd(self):
+        c1 = self.char1
+        c2 = self.char2
+        c1.execute_cmd("attack %s" % c2)
+
+        for i in range(3):
+            self.call(combat.CmdBlock(), "", "You block incoming attacks.")
+        self.call(combat.CmdBlock(), "%s" % c2, "You can only queue 3 actions in a turn.")
+
+class CmdAimTestCase(CommandTest):
+    character_typeclass = Character
+
+    def test_cmd(self):
+        c1 = self.char1
+        c2 = self.char2
+        c1.execute_cmd("attack %s" % c2)
+
+        for i in range(3):
+            self.call(combat.CmdAim(), "", "You take time to aim.")
+        self.call(combat.CmdAim(), "%s" % c2, "You can only queue 3 actions in a turn.")

@@ -131,7 +131,7 @@ class CombatHandlerTestCase(EvenniaTest):
         ch = c1.ndb.combat_handler
 
         ch.msg_positions(c1)
-        exp = "Targets(Range): %s(%i)" % (c2,
-                                          ch.db.positions[c1.id][c2.id])
+        exp = "Targets(Range): %s(%s)" % (c2,
+                                          Distance(ch.db.positions[c1.id][c2.id]).name)
         self.assertIn(exp, (args[0] for name, args, kwargs
                        in c1.msg.mock_calls))
