@@ -5,6 +5,7 @@ from evennia import DefaultScript
 
 from world import rules
 
+
 class Distance(IntEnum):
     Personal = 0
     Close = 1
@@ -14,10 +15,12 @@ class Distance(IntEnum):
     Far = 5
     Extreme = 6
 
+
 class Direction(IntEnum):
     Back = -1
     Steady = 0
     Forward = 1
+
 
 class CombatHandler(DefaultScript):
     """
@@ -27,13 +30,13 @@ class CombatHandler(DefaultScript):
     def at_script_creation(self):
         self.key = "cbt_hlr_%s" % hex(randint(1, 10000))
         self.des = "handles combat"
-        self.interval = 60 * 2 # one min timeout
+        self.interval = 60 * 2  # one min timeout
         self.start_delay = True
         self.persistant = True
 
         self.db.characters = {}
         self.db.positions = {}
-        self.db.turn_actions = {}
+        self.reset_actions()
 
     def _init_character(self, character):
         """
@@ -105,7 +108,7 @@ class CombatHandler(DefaultScript):
         if character.id in self.db.characters:
             self._cleanup_character(character)
         if not self.db.characters:
-            self.stop() # End of nobody left.
+            self.stop()  # End of nobody left.
 
     def msg_all(self, message):
         "Send message to all participants"
@@ -139,9 +142,9 @@ class CombatHandler(DefaultScript):
 
         """
         queue = self.db.turn_actions[character.id]
-        if 0 <= len(queue) <= 2: # only allow 3 actions
+        if 0 <= len(queue) <= 2:  # only allow 3 actions
             queue.append((action, character, target))
-            self._check_end_turn() # check if everyone has entered commands
+            self._check_end_turn()  # check if everyone has entered commands
             return True
         else:
             return False
@@ -150,18 +153,23 @@ class CombatHandler(DefaultScript):
         if all(len(actions) == 3 for actions in self.db.turn_actions.values()):
             self.at_repeat("endturn")
 
-    def end_turn(self):
+    def reset_actions(self):
+        self.db.turn_actions = {}
 
-        rules.resolve_combat_round(self)
+    def end_turn(self):
         if len(self.db.characters) < 2:
             self.msg_all("Combat has ended.")
             self.stop()
         else:
+            # Resolve actions
+            # rules.resolve_combat_round(self) should go in else
             # clear character turn actions
             self.msg_all("{M Next turn begins!  Choose 3 actions ...")
-            for character in self.db.characters.values():
-                self.db.turn_actions[character.id] = []
-                self.msg_positions(character)
+
+            # clear actions in turn after parse
+            # for character in self.db.characters.values():
+            #     self.db.turn_actions[character.id] = []
+            #     self.msg_positions(character)
 
     def msg_positions(self, character):
         """

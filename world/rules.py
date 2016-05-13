@@ -33,6 +33,57 @@ def simple_check(attrib, mods=0):
     """
     return roll_dice(2,6) + get_mod(attrib) + mods > 7
 
+class CombatTurn_Handler:
+    """
+    Resolves and tracks data on a single combat round.
+
+    """
+    def __init__(self, ch):
+        """
+        Sets up the current round.
+        Args:
+            ch (CombatHandler):  for current combat.
+
+        """
+        self.ch = ch
+        self.general_defense = defaultdict(int)
+        self.ranged_defense = defaultdict(int)
+        self.ranged_bonus = defaultdict(int)
+        self.melee_defense = defaultdict(int)
+        # self.melee_bonus = defaultdict(int)
+        self.ranged_attacks = defaultdict(list)
+        self.melee_attacks = defaultdict(list)
+        self.move_actions = []
+
+    def parse_actions(self, actions):
+        """
+        Parses action queue for the turn and to trigger resolutions.
+        Args:
+            actions: dict(tuple(action string, character, target)
+
+        Returns: Eventually outcomes.
+
+        """
+        for dbref, queue in self.ch.db.turn_actions.iteritems():
+            for item in queue:
+                action, char, target = item
+                # Resolve position Changes in order Kite and Rush
+                if action == 'retreat' or action == 'rush':
+                    self.move_actions.append(item)
+                if action == 'aim':  # Add automatic ranged bonuses
+                    self.ranged_bonus[char.id] += 1
+                if action == 'cover':  # Add automatic ranged defenses
+                    self.ranged_defense[char.id] += 1
+                if action == 'block':  # Add automatic Melee defense
+                    self.melee_defense[char.id] += 1
+                if action == 'shoot':  # Queue a ranged attack
+                    self.ranged_attacks[char.id].append((char, target))
+                if action == 'strike':  # Queue melee attack
+                    self. melee_attacks[char.id].append((char, target))
+                if action == 'dodge':  # Add a general defense if dex check
+                    self.general_defense[char.id] += 1 if simple_check(char.dex(), -2) else 0
+
+# Method based implmenetation
 def resolve_combat_round(combat_handler):
     """
     Resolves the outcome of actions in a single combat round.

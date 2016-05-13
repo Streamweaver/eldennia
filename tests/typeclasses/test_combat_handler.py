@@ -103,8 +103,8 @@ class CombatHandlerTestCase(EvenniaTest):
         ch = c2.ndb.combat_handler
 
         # Char1 actions
-        self.assertTrue(ch.add_action("shoot", c1, c2))
-        self.assertTrue(ch.add_action("move", c1, c2))
+        self.assertTrue(ch.add_action("rush", c1, c2))
+        self.assertTrue(ch.add_action("retreat", c1, c2))
         self.assertTrue(ch.add_action("communicate", c1, c2))
         self.assertFalse(ch.add_action("sleep", c1, c2))
 
@@ -124,14 +124,14 @@ class CombatHandlerTestCase(EvenniaTest):
                       (args[0] for name, args, kwargs
                        in c2.msg.mock_calls))
 
-    def test_msg_positions(self):
-        c1 = self.char1
-        c2 = self.char2
-        c1.execute_cmd("attack %s" % c2)
-        ch = c1.ndb.combat_handler
-
-        ch.msg_positions(c1)
-        exp = "Targets(Range): %s(%s)" % (c2,
-                                          Distance(ch.db.positions[c1.id][c2.id]).name)
-        self.assertIn(exp, (args[0] for name, args, kwargs
-                       in c1.msg.mock_calls))
+    # def test_msg_positions(self):
+    #     c1 = self.char1
+    #     c2 = self.char2
+    #     c1.execute_cmd("attack %s" % c2)
+    #     ch = c1.ndb.combat_handler
+    #
+    #     ch.msg_positions(c1)
+    #     exp = "Targets(Range): %s(%s)" % (c2,
+    #                                       Distance(ch.db.positions[c1.id][c2.id]).name)
+    #     self.assertIn(exp, (args[0] for name, args, kwargs
+    #                    in c1.msg.mock_calls))

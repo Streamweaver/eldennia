@@ -12,6 +12,8 @@ class CmdAttack(MuxCommand):
     This will initiate combat with <target>. Joins combat if you or <target> already in combat.
     """
     key = "attack"
+    aliases = []
+    locks = "cmd:all()"
     help_category = "General"
 
     def func(self):
@@ -61,7 +63,8 @@ class CmdRush(MuxCommand):
 
     """
     key = "rush"
-    aliases = ["advance", "toward"]
+    aliases = []
+    locks = "cmd:all()"
     help_category = "combat"
 
     def func(self):
@@ -70,6 +73,7 @@ class CmdRush(MuxCommand):
            return
         target = self.caller.search(self.args)
         if not target:
+            self.caller.msg("No target found named %s" % self.args)
             return
 
         ok = self.caller.ndb.combat_handler.add_action(self.key,
@@ -91,7 +95,8 @@ class CmdRetreat(MuxCommand):
 
     """
     key = "retreat"
-    aliases = ["kite", "rtrt"]
+    aliases = ["kite",]
+    locks = "cmd:all()"
     help_category = "combat"
 
     def func(self):
@@ -121,7 +126,8 @@ class CmdDodge(MuxCommand):
 
     """
     key = "dodge"
-    aliases = ["duck",]
+    aliases = []
+    locks = "cmd:all()"
     help_category = "combat"
 
     def func(self):
@@ -144,7 +150,8 @@ class CmdCover(MuxCommand):
 
     """
     key = "cover"
-    aliases = ["cvr",]
+    aliases = []
+    locks = "cmd:all()"
     help_category = "combat"
 
     def func(self):
@@ -168,6 +175,7 @@ class CmdBlock(MuxCommand):
     """
     key = "block"
     aliases = ["parry",]
+    locks = "cmd:all()"
     help_category = "combat"
 
     def func(self):
@@ -192,6 +200,7 @@ class CmdAim(MuxCommand):
     """
     key = "aim"
     aliases = []
+    locks = "cmd:all()"
     help_category = "combat"
 
     def func(self):

@@ -43,7 +43,7 @@ class CmdCheck(MuxCommand):
     Returns success or failure for an attibute check.
     """
     key = "check"
-    aliases = ["check", "@check"]
+    aliases = []
     lock = "cmd:all()"
     help_category = "General"
 
