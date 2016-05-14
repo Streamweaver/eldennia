@@ -3,7 +3,7 @@ from enum import IntEnum
 
 from evennia import DefaultScript
 
-from world import rules
+from world.rules.resolvers import resolve_combat_turn
 
 MSG_AUTO_TURN_END = "Turn ending automatically.  Continuing ..."
 MSG_TURN_END = "{M Next turn begins!  Choose 3 actions ..."
@@ -38,10 +38,10 @@ class CombatHandler(DefaultScript):
         self.start_delay = True
         self.persistant = True
 
-        self.db.characters = {}
+        self.db.characters = {} # {dbref: Character, ...}
         self.db.distance_max = Distance.Extreme
         self.db.distance_min = Distance.Close
-        self.db.positions = {}
+        self.db.positions = {} # {dbref: {dbref: int, dbref: int, ...}, ... }
         self.db.actions = {} # {dbref: [('actionstring', caller, target), ...], ...}
 
     def at_start(self):
@@ -148,7 +148,7 @@ class CombatHandler(DefaultScript):
             self.stop()
         else:
             # Resolve actions
-            # rules.resolve_combat_round(self) should go in else
+            resolve_combat_turn(self)
             for dbref in self.db.actions.keys():
                 self.db.actions[dbref] = []
             self.msg_all(MSG_TURN_END)
@@ -237,3 +237,4 @@ class CombatHandler(DefaultScript):
         if positions:
             plural = "s" if len(positions) > 1 else ""
             character.msg("Target%s(Range): " % plural + ", ".join(positions))
+

@@ -10,3 +10,4 @@ def sample_char(char):
     Returns:
 
     """
+    pass

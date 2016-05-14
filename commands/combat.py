@@ -19,7 +19,7 @@ class CmdAttack(MuxCommand):
     def func(self):
         "Handle command"
         if not self.args:
-            self.caller.msg("Usage: attack <target>")
+            self.caller.msg("Usage: %s <target>" % self.key)
             return
         target = self.caller.search(self.args)
         if not target:
@@ -69,8 +69,9 @@ class CmdRush(MuxCommand):
 
     def func(self):
         if not self.args:
-           self.caller.msg("Usage: rush <target>")
-           return
+            self.caller.msg("Usage: %s <target>" % self.key)
+            return
+
         target = self.caller.search(self.args)
         if not target:
             self.caller.msg("No target found named %s" % self.args)
@@ -101,7 +102,7 @@ class CmdRetreat(MuxCommand):
 
     def func(self):
         if not self.args:
-            self.caller.msg("Usage: retreat <target>")
+            self.caller.msg("Usage: %s <target>" % self.key)
             return
         target = self.caller.search(self.args)
         if not target:
@@ -193,7 +194,7 @@ class CmdAim(MuxCommand):
     Gain bonus ranged attacks.
 
     Usage:
-        cover
+        aim
 
     Automatic +1 to ranged attacks.
 
@@ -212,6 +213,66 @@ class CmdAim(MuxCommand):
         else:
             self.caller.msg("You can only queue 3 actions in a turn.")
 
+# Attack Actions
+class CmdShoot(MuxCommand):
+    """
+    Gain bonus ranged attacks.
+
+    Usage:
+        shoot <target>
+
+    Automatic +1 to ranged attacks.
+
+    """
+    key = "shoot"
+    aliases = []
+    locks = "cmd:all()"
+    help_category = "combat"
+
+    def func(self):
+        if not self.args:
+            self.caller.msg("Usage: %s <target>" % self.key)
+            return
+        target = self.caller.search(self.args)
+        if not target:
+            return
+        ok = self.caller.ndb.combat_handler.add_action(self.key,
+                                                       self.caller,
+                                                       target)
+        if ok:
+            self.caller.msg("You shoot at %s." % target)
+        else:
+            self.caller.msg("You can only queue 3 actions in a turn.")
+
+class CmdStrike(MuxCommand):
+    """
+    Gain bonus ranged attacks.
+
+    Usage:
+        strike <target>
+
+    Automatic +1 to ranged attacks.
+
+    """
+    key = "strike"
+    aliases = []
+    locks = "cmd:all()"
+    help_category = "combat"
+
+    def func(self):
+        if not self.args:
+            self.caller.msg("Usage: %s <target>" % self.key)
+            return
+        target = self.caller.search(self.args)
+        if not target:
+            return
+        ok = self.caller.ndb.combat_handler.add_action(self.key,
+                                                       self.caller,
+                                                       target)
+        if ok:
+            self.caller.msg("You shoot at %s." % target)
+        else:
+            self.caller.msg("You can only queue 3 actions in a turn.")
 
 class CombatCmdSet(CmdSet):
     key = "combat_cmdset"
@@ -226,6 +287,8 @@ class CombatCmdSet(CmdSet):
         self.add(CmdCover())
         self.add(CmdBlock())
         self.add(CmdAim())
+        self.add(CmdShoot())
+        self.add(CmdStrike())
         # self.add(CmdDisengage())
         # self.add(CmdHelp())
         self.add(default_cmds.CmdPose())

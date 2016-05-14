@@ -1,5 +1,5 @@
 from commands.command import MuxCommand
-from world.rules import simple_check
+from world.rules.rollers import simple_check
 
 """
 Used for defining new local commands.
