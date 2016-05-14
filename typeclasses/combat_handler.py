@@ -5,7 +5,8 @@ from evennia import DefaultScript
 
 from world import rules
 
-MSG_AUTO_TURN = "Turn ending automatically.  Continuing ..."
+MSG_AUTO_TURN_END = "Turn ending automatically.  Continuing ..."
+MSG_TURN_END = "{M Next turn begins!  Choose 3 actions ..."
 
 class Distance(IntEnum):
     Personal = 0
@@ -134,15 +135,12 @@ class CombatHandler(DefaultScript):
         where we send an argument.
         """
         if not args:
-            self.msg_all(MSG_AUTO_TURN)
+            self.msg_all(MSG_AUTO_TURN_END)
         self.end_turn()
 
     def _check_end_turn(self):
         if all(len(actions) == 3 for actions in self.db.actions.values()):
             self.at_repeat("endturn")
-
-    def clear_actions(self):
-        self.db.actions = {}
 
     def end_turn(self):
         if len(self.db.characters) < 2:
@@ -151,8 +149,9 @@ class CombatHandler(DefaultScript):
         else:
             # Resolve actions
             # rules.resolve_combat_round(self) should go in else
-            # clear character turn actions
-            self.msg_all("{M Next turn begins!  Choose 3 actions ...")
+            for dbref in self.db.actions.keys():
+                self.db.actions[dbref] = []
+            self.msg_all(MSG_TURN_END)
 
     #--- MOVEMENT
     def set_distance(self, dmax=Distance.Extreme, dmin=Distance.Close):
@@ -172,6 +171,10 @@ class CombatHandler(DefaultScript):
         if dmin < Distance.Personal:
             raise CombatHandlerExecption("Min distance exceeds range")
 
+        # Set distance boundaries
+        self.db.distance_max = dmax
+        self.db.distance_min = dmin
+
         # If character current distances violate this, modify them.  Edge case of morphing
         # rooms.
         for cref, positions in self.db.positions.iteritems():
@@ -181,44 +184,41 @@ class CombatHandler(DefaultScript):
                     self.db.positions[cref][tref] = self.db.distance_max
                 if distance < self.db.distance_min:
                     self.db.positions[cref][tref] = self.db.distance_min
-        # Set distance boundaries
-        self.db.distance_max = dmax
-        self.db.distance_min = dmin
 
-    def adjust_position(self, char1, char2, change):
+    def adjust_position(self, dbref1, dbref2, change):
         """
         Adjusts relative position of two combatants
 
         Args:
-            char1:  dbref of  chracter 1
-            char2:  dbref of character 2
+            dbref1:  dbref of  chracter 1
+            dbref2:  dbref of character 2
             change: int of distance increment to change range, positive or negative
 
         Return:  Boolean of weather the position was actually changed.  False if ecxeeds boundaries.
 
         """
-        new_position = self.db.positions[char1][char2] + change
+        new_position = self.db.positions[dbref1][dbref2] + change
         if new_position > self.db.distance_max:
             return False
         if new_position < self.db.distance_min:
             return False
-        self.db.positions[char1][char2] = new_position
-        self.db.positions[char2][char1] = new_position
+        self.db.positions[dbref1][dbref2] = new_position
+        self.db.positions[dbref2][dbref1] = new_position
         return True
 
-    def get_distance(self, char1, char2):
+    def get_distance(self, dbref1, dbref2):
         """
         Returns the relative position of two characters.
 
         Args:
-            char1: dbref of char1
-            char2: dbref of char2
+            dbref1: dbref of char1
+            dbref2: dbref of char2
 
         Returns: Int of relative distance between characters.
 
         """
         try:
-            return self.db.positions[char1][char2]
+            return self.db.positions[dbref1][dbref2]
         except KeyError:
             raise CombatHandlerExecption("Character with dbref does not have a position")
 

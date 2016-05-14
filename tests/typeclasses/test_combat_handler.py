@@ -5,7 +5,8 @@ from typeclasses.rooms import Room
 from mock import Mock
 
 from typeclasses.combat_handler import Distance
-from typeclasses.combat_handler import CombatHandler, MSG_AUTO_TURN
+from typeclasses.combat_handler import CombatHandler, MSG_AUTO_TURN_END, MSG_TURN_END
+from typeclasses.combat_handler import CombatHandlerExecption
 
 class DistanceTestCase(EvenniaTest):
     def test_basic(self):
@@ -135,7 +136,6 @@ class CombatHandlerTestCase(EvenniaTest):
         ch.msg_positions(c1)
         exp = "Target(Range): %s(%s)" % (c2,
                                           Distance(ch.db.positions[c1.id][c2.id]).name)
-        print c1.msg.mock_calls
         self.assertIn(exp, (args[0] for name, args, kwargs
                        in c1.msg.mock_calls))
 
@@ -145,12 +145,61 @@ class CombatHandlerTestCase(EvenniaTest):
 
         # It should not automatically message everyone
         ch.at_repeat("endturn")
-        self.assertNotIn(MSG_AUTO_TURN, (args[0] for name, args, kwargs
-                                         in c1.msg.mock_calls))
+        self.assertNotIn(MSG_AUTO_TURN_END, (args[0] for name, args, kwargs
+                                             in c1.msg.mock_calls))
 
         # It should message everyone turn ending automatically
         ch.at_repeat()
-        self.assertIn(MSG_AUTO_TURN, (args[0] for name, args, kwargs
-                            in c1.msg.mock_calls))
+        self.assertIn(MSG_AUTO_TURN_END, (args[0] for name, args, kwargs
+                                          in c1.msg.mock_calls))
 
+    def test_end_turn(self):
+        c1, c2 = self.ch.db.characters.values()
+        ch = self.ch
 
+        # Add some actions
+        ch.add_action("shoot", c1, c2)
+        ch.add_action("rush", c2, c1)
+        ch.add_action("aim", c1, None)
+
+        ch.end_turn()
+        # It should let everyone know the turn ends
+        for c in [c1, c2]:
+            self.assertIn(MSG_TURN_END, (args[0] for name, args, kwargs
+                                              in c.msg.mock_calls))
+        # It should have reset actions for everyone.
+        for c in [c1, c2]:
+            self.assertEqual(0, len(ch.db.actions[c.id]))
+
+        # It should end combat and notify the last character if only one left.
+        ch.remove_character(c1)
+        ch.end_turn()
+        self.assertIn("Combat has ended.", (args[0] for name, args, kwargs
+                                         in c2.msg.mock_calls))
+
+    def test_set_distance(self):
+        c1, c2 = self.ch.db.characters.values()
+        ch = self.ch
+
+        # It should set new valid positions.
+        ch.set_distance(6, 0)
+        self.assertEqual(6, ch.db.distance_max)
+        self.assertEqual(0, ch.db.distance_min)
+
+        # It should not allow setting of invalid distances
+        self.assertRaises(CombatHandlerExecption, ch.set_distance, 7, 0)
+        self.assertRaises(CombatHandlerExecption, ch.set_distance, 6, -1)
+        self.assertRaises(CombatHandlerExecption, ch.set_distance, 0, 6)
+
+        # It should reset distance on new max value
+        for i in range(8): # Move them to max
+            ch.adjust_position(c1.id, c2.id, 1)
+        ch.set_distance(5, 0)
+        self.assertEqual(5, ch.get_distance(c1.id, c2.id))
+
+    def test_get_distance(self):
+        c1, c2 = self.ch.db.characters.values()
+        ch = self.ch
+
+        exp = ch.db.positions[c1.id][c2.id]
+        self.assertEqual(exp, ch.get_distance(c1.id, c2.id))
