@@ -108,17 +108,21 @@ class CombatHandlerTestCase(EvenniaTest):
         ch = self.ch
 
         # It should add 3 actions for a character
-        self.assertTrue(ch.add_action("rush", c1, c2))
-        self.assertTrue(ch.add_action("retreat", c1, c2))
-        self.assertTrue(ch.add_action("communicate", c1, c2))
+        self.assertTrue(ch.add_action("dodge", c1, None))
+        self.assertTrue(ch.add_action("dodge", c1, None))
+        self.assertTrue(ch.add_action("dodge", c1, None))
 
         # It should fail to add a 4th action
-        self.assertFalse(ch.add_action("sleep", c1, None))
+        self.assertFalse(ch.add_action("dodge", c1, None))
 
         # Char2 actions
-        self.assertTrue(ch.add_action("shoot", c2, c1))
-        self.assertTrue(ch.add_action("shoot", c2, c1))
-        self.assertTrue(ch.add_action("shoot", c2, c1))
+        self.assertTrue(ch.add_action("dodge", c2, None))
+        self.assertTrue(ch.add_action("dodge", c2, None))
+        self.assertTrue(ch.add_action("dodge", c2, None))
+
+        # It should resolve and reset all actions after everyone enters 3
+        for c in [c1, c2]:
+            self.assertEqual(0, len(ch.db.actions[c.id]))
 
     def test_end_turn(self):
         c1, c2 = self.ch.db.characters.values()
