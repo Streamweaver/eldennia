@@ -42,7 +42,7 @@ def resolve_combat_turn(combat_handler):
                 general_defense[char.id] += 1 if simple_check(char.dex(), -2) else 0
 
     for queue in ch.db.actions.values():
-        for action in queue:
+        for item in queue:
             action, character, target = item
             msg = "You %s %s." % (action, target) if target else "You %s." % action
             character.msg(msg)
