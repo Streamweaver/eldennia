@@ -53,10 +53,6 @@ class CombatTurn_HandlerTestCase(EvenniaTest):
     character_typeclass = Character
     room_typeclass = Room
 
-    # def setUp(self):
-    #     super(CombatTurn_HandlerTestCase, self).setUp():
-    #         pass
-
     def test_parse_actions(self):
         c1 = self.char1
         c2 = self.char2
@@ -71,10 +67,10 @@ class CombatTurn_HandlerTestCase(EvenniaTest):
 
         # Test general_defense
         _simple_cmd("dodge")
-        self.assertTrue(any(ch.db.turn_actions))
+        self.assertTrue(any(ch.db.actions))
         turn = rules.CombatTurn_Handler(ch)
         turn.parse_actions()
-        self.assertFalse(any(ch.db.turn_actions))
+        self.assertFalse(any(ch.db.actions))
         for k, v in (turn.general_defense.iteritems()):
             self.assertIn(k, [c1.id, c2.id])
             self.assertGreaterEqual(v, 0)
@@ -82,10 +78,10 @@ class CombatTurn_HandlerTestCase(EvenniaTest):
 
         # Test ranged defense
         _simple_cmd("cover")
-        self.assertTrue(any(ch.db.turn_actions))
+        self.assertTrue(any(ch.db.actions))
         turn = rules.CombatTurn_Handler(ch)
         turn.parse_actions()
-        self.assertFalse(any(ch.db.turn_actions))
+        self.assertFalse(any(ch.db.actions))
         for k, v in (turn.ranged_defense.iteritems()):
             self.assertIn(k, [c1.id, c2.id])
             self.assertEquals(v, 3)

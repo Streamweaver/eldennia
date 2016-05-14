@@ -64,7 +64,7 @@ class CombatTurn_Handler:
         Returns: Eventually outcomes.
 
         """
-        for dbref, queue in self.ch.db.turn_actions.iteritems():
+        for dbref, queue in self.ch.db.actions.iteritems():
             for item in queue:
                 action, char, target = item
                 # Resolve position Changes in order Kite and Rush
@@ -103,7 +103,7 @@ def resolve_combat_round(combat_handler):
     moves = []
 
     # Iterate over character action queues and sort by resolution.
-    for dbref, queue in ch.db.turn_actions.iteritems():
+    for dbref, queue in ch.db.actions.iteritems():
         for item in queue:
             action, char, target = item
             # Resolve position Changes in order Kite and Rush
