@@ -12,14 +12,15 @@ def resolve_combat_turn(combat_handler):
     """
     ch = combat_handler
     # Actions
-    general_defense = defaultdict(int)
+    general_defense = defaultdict(int) # {dbref: 0, ... }
     ranged_defense = defaultdict(int)
     ranged_bonus = defaultdict(int)
     melee_defense = defaultdict(int)
     melee_bonus = defaultdict(int)
     ranged_attacks = defaultdict(list)
     melee_attacks = defaultdict(list)
-    moves = []
+    moves = [] # [("rush", character, traget), ...]
+    feedback = {} # {"actionname": ["string", "string", ...], ... }
 
     # Iterate over character action queues and sort by resolution.
     for dbref, queue in ch.db.actions.iteritems():
@@ -41,11 +42,9 @@ def resolve_combat_turn(combat_handler):
             if action == CmdDodge.key: # Add a general defense if dex check
                 general_defense[char.id] += 1 if simple_check(char.dex(), -2) else 0
 
-    for queue in ch.db.actions.values():
-        for item in queue:
-            action, character, target = item
-            msg = "You %s %s." % (action, target) if target else "You %s." % action
-            character.msg(msg)
+    feedback["moves"]= resolve_moves(ch, moves)
+    feedback['dodge'] = melee_to_dodge(ch, melee_attacks, general_defense)
+    return feedback
 
 def resolve_ranged_attacks():
     pass
@@ -69,14 +68,14 @@ def melee_to_dodge(ch, melee_attacks, general_defense):
     feedback = []
     remaining_attacks = defaultdict(list)
     for dbref, attacks in melee_attacks.iteritems():
-        for attack in attacks: # Iterate through attacks
-            atkr, dfndr = attack
-            if ch.db.positions[atkr.id][dfndr.id] > 1: # if target too far for melee ...
-                general_defense[atkr.id] += 1 if simple_check(atkr.dex(), -2) else 0 # ... attemp dodge
-                feedback.append("%s is too far to strike %s and tries to dodge!" % (atkr, dfndr)) # ... and let us know
-            else:
-                remaining_attacks[dbref].append(attack)
-    return (feedback, remaining_attacks)
+        for idx, attack in enumerate(attacks): # Iterate through attacks
+            attacker, target = attack
+            if ch.get_distance(attacker.id, target.id) > 1: # if target too far for melee ...
+                general_defense[attacker.id] += 1 if simple_check(attacker.dex(), -2) else 0 # dodge instead ...
+                attacks.pop(idx)
+                feedback.append("%s can't reach %s and dodges!" % (attacker, target)) # ... and let us know
+        melee_attacks[dbref] = [attack for attack in attacks if ch.get_distance(attack[0].id, attack[1].id) <= 1]
+    return list(set(feedback))
 
 def resolve_moves(ch, moves):
     """
@@ -95,11 +94,11 @@ def resolve_moves(ch, moves):
 
     # Iterate over each move attempt.
     for action, char, target in moves:
-        i = 1 if action == "rush" else -1 # set distance change based on type of move.
+        i = 1 if action == CmdRush.key else -1 # set distance change based on type of move.
         chng = i if simple_check(char.dex()) else 0 # actual change value if success, 0 if failure
         if chng: # only call if actual value changes
-            if ch.adjust_position(char, target, chng):
-                chng = 0 # Zero of method call fails as actual change would violate limits. i.e. no actual change.
+            if ch.adjust_position(char.id, target.id, chng):
+                chng = 0 # Zero if method call fails as actual change would violate limits. i.e. no actual change.
         keys = sorted([char.id, target.id]) # create a simple index for a deduped list of total changes.
         results[keys[0]][keys[1]] += chng # this ensures same char combinations always added together once
 
@@ -110,5 +109,5 @@ def resolve_moves(ch, moves):
         for tid, chng in mvs.iteritems():
             char = ch.db.characters[cid]
             target = ch.db.characters[tid]
-            feedback.append("%s and %s %s" % (char, target, directions[chng]))
-    return (feedback)
+            feedback.append("%s and %s %s." % (char, target, directions[chng]))
+    return feedback
