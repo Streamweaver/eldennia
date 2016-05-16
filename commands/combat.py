@@ -2,6 +2,9 @@ from commands.command import MuxCommand
 from evennia import create_script
 from evennia import CmdSet, default_cmds
 
+MAX_COMMANDS = 2
+MSG_MAX_COMMANDS = "You can only queue %i actions in a turn." % MAX_COMMANDS
+
 class CmdAttack(MuxCommand):
     """
     Initiates combat with target
@@ -49,81 +52,40 @@ class CmdAttack(MuxCommand):
             ch = create_script("combat_handler.CombatHandler")
             ch.add_character(self.caller)
             ch.add_character(target)
-            ch.msg_positions(self.caller) # First char added doesn't get anyone's position since they don't exist
 
-# Move Actions
+# Initiative Actions
 class CmdRush(MuxCommand):
     """
-    Move closer to target.
+    Rush your attacks
 
     Usage:
-        rush <target>
+        rush
 
-    Dex check to move closer to target one interval.
-
+    Hurry your actions to gain a bonus to initiative but penalty to all other actions for the round.
     """
     key = "rush"
-    aliases = []
+    aliases = ["hasten", "hurry"]
     locks = "cmd:all()"
     help_category = "combat"
 
     def func(self):
-        if not self.args:
-            self.caller.msg("Usage: %s <target>" % self.key)
-            return
-
-        target = self.caller.search(self.args)
-        if not target:
-            self.caller.msg("No target found named %s" % self.args)
-            return
-
         ok = self.caller.ndb.combat_handler.add_action(self.key,
                                                        self.caller,
-                                                       target)
+                                                       None)
         if ok:
-            self.caller.msg("You try to move closer to %s." % target)
+            self.caller.msg("You rush your attacks recklessly.")
         else:
-            self.caller.msg("You can only queue 3 actions in a turn.")
-
-class CmdRetreat(MuxCommand):
-    """
-    Move away from target.
-
-    Usage:
-        retreat <target>
-
-    Dex check to move away from target one interval.
-
-    """
-    key = "retreat"
-    aliases = ["kite",]
-    locks = "cmd:all()"
-    help_category = "combat"
-
-    def func(self):
-        if not self.args:
-            self.caller.msg("Usage: %s <target>" % self.key)
-            return
-        target = self.caller.search(self.args)
-        if not target:
-            return
-        ok = self.caller.ndb.combat_handler.add_action(self.key,
-                                                       self.caller,
-                                                       target)
-        if ok:
-            self.caller.msg("You try to move away from %s." % target)
-        else:
-            self.caller.msg("You can only queue 3 actions in a turn.")
+            self.caller.msg(MSG_MAX_COMMANDS)
 
 # Defensive Actions
 class CmdDodge(MuxCommand):
     """
-    Attempt general defensive dodge against all attack types.
+    Actively dodge attacks.
 
     Usage:
         dodge
 
-    Dex check -2 to add 1 to defense against melee and ranged.
+    Add Dex modfier to all defenses while taking a penalty to all actions. Lasts remainder of the turn.
 
     """
     key = "dodge"
@@ -138,20 +100,20 @@ class CmdDodge(MuxCommand):
         if ok:
             self.caller.msg("You try to dodge all attacks.")
         else:
-            self.caller.msg("You can only queue 3 actions in a turn.")
+            self.caller.msg(MSG_MAX_COMMANDS)
 
-class CmdCover(MuxCommand):
+class CmdParry(MuxCommand):
     """
-    Gain defense against ranged attacks.
+    Block incomming melee attacks.
 
     Usage:
-        cover
+        parry
 
-    Automatic +1 to ranged defense.
+    Add melee skill to melee defense, take penalty to all other actions.  Lasts until end of turn.
 
     """
-    key = "cover"
-    aliases = []
+    key = "parry"
+    aliases = ["block",]
     locks = "cmd:all()"
     help_category = "combat"
 
@@ -160,43 +122,19 @@ class CmdCover(MuxCommand):
                                                        self.caller,
                                                        None)
         if ok:
-            self.caller.msg("You duck behind cover.")
+            self.caller.msg("You %s incoming attacks." % self.key)
         else:
-            self.caller.msg("You can only queue 3 actions in a turn.")
-
-class CmdBlock(MuxCommand):
-    """
-    Gain defense against melee attacks.
-
-    Usage:
-        block
-
-    Automatic +1 to melee defense.
-
-    """
-    key = "block"
-    aliases = ["parry",]
-    locks = "cmd:all()"
-    help_category = "combat"
-
-    def func(self):
-        ok = self.caller.ndb.combat_handler.add_action(self.key,
-                                                       self.caller,
-                                                       None)
-        if ok:
-            self.caller.msg("You block incoming attacks.")
-        else:
-            self.caller.msg("You can only queue 3 actions in a turn.")
+            self.caller.msg(MSG_MAX_COMMANDS)
 
 # Attack bonus actions
 class CmdAim(MuxCommand):
     """
-    Gain bonus ranged attacks.
+    Aim carefully.
 
     Usage:
         aim
 
-    Automatic +1 to ranged attacks.
+    Add 1 to ranged attack roles for the round.
 
     """
     key = "aim"
@@ -211,17 +149,17 @@ class CmdAim(MuxCommand):
         if ok:
             self.caller.msg("You take time to aim.")
         else:
-            self.caller.msg("You can only queue 3 actions in a turn.")
+            self.caller.msg(MSG_MAX_COMMANDS)
 
 # Attack Actions
 class CmdShoot(MuxCommand):
     """
-    Gain bonus ranged attacks.
+    Make a ranged attack.
 
     Usage:
         shoot <target>
 
-    Automatic +1 to ranged attacks.
+    Make a ranged attack with your equipt weapon at target.
 
     """
     key = "shoot"
@@ -242,16 +180,16 @@ class CmdShoot(MuxCommand):
         if ok:
             self.caller.msg("You shoot at %s." % target)
         else:
-            self.caller.msg("You can only queue 3 actions in a turn.")
+            self.caller.msg(MSG_MAX_COMMANDS)
 
 class CmdStrike(MuxCommand):
     """
-    Gain bonus ranged attacks.
+    Make a melee attack.
 
     Usage:
         strike <target>
 
-    Automatic +1 to ranged attacks.
+    Make a melee attack with your equipt weapon at target.
 
     """
     key = "strike"
@@ -272,7 +210,7 @@ class CmdStrike(MuxCommand):
         if ok:
             self.caller.msg("You shoot at %s." % target)
         else:
-            self.caller.msg("You can only queue 3 actions in a turn.")
+            self.caller.msg(MSG_MAX_COMMANDS)
 
 class CombatCmdSet(CmdSet):
     key = "combat_cmdset"
@@ -282,10 +220,8 @@ class CombatCmdSet(CmdSet):
 
     def at_cmdset_creation(self):
         self.add(CmdRush())
-        self.add(CmdRetreat())
         self.add(CmdDodge())
-        self.add(CmdCover())
-        self.add(CmdBlock())
+        self.add(CmdParry())
         self.add(CmdAim())
         self.add(CmdShoot())
         self.add(CmdStrike())

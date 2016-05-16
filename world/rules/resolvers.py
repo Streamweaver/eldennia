@@ -1,7 +1,9 @@
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
+from random import shuffle
 
 from world.rules.rollers import simple_check
-from commands.combat import CmdDodge, CmdBlock, CmdRetreat, CmdAim, CmdCover, CmdRush, CmdShoot, CmdStrike
+from commands.combat import CmdDodge, CmdParry, CmdAim, CmdRush, CmdShoot, CmdStrike
+from world.rules.rollers import roll_attribute, get_mod
 
 def resolve_combat_turn(combat_handler):
     """
@@ -11,103 +13,116 @@ def resolve_combat_turn(combat_handler):
 
     """
     ch = combat_handler
-    # Actions
-    general_defense = defaultdict(int) # {dbref: 0, ... }
-    ranged_defense = defaultdict(int)
-    ranged_bonus = defaultdict(int)
-    melee_defense = defaultdict(int)
-    melee_bonus = defaultdict(int)
-    ranged_attacks = defaultdict(list)
-    melee_attacks = defaultdict(list)
-    moves = [] # [("rush", character, traget), ...]
     feedback = {} # {"actionname": ["string", "string", ...], ... }
+
+    # {dbref: {"init": int, "melee": [(atker, tgt), ...], "ranged": [(atkr, tgt), ...]},...}
+    attacks = _init_attacks(c for c in ch.db.characters.values())
+    mods = _init_modifiers(c for c in ch.db.characters.values())
 
     # Iterate over character action queues and sort by resolution.
     for dbref, queue in ch.db.actions.iteritems():
         for item in queue:
             action, char, target = item
-            # Resolve position Changes in order Kite and Rush
-            if action == CmdRetreat.key or action == CmdRush.key:
-                moves.append(item)
+            if action == CmdRush.key:
+                attacks[dbref]["init"] += 2
+                mods[dbref]["general"]["penalty"] += 1
             if action == CmdAim.key: # Add automatic ranged bonuses
-                ranged_bonus[char.id] += 1
-            if action == CmdCover.key: # Add automatic ranged defenses
-                ranged_defense[char.id] += 1
-            if action == CmdBlock.key:# Add automatic Melee defense
-                melee_defense[char.id] += 1
+                mods[dbref]["ranged"]["bonus"] += 1
+            if action == CmdParry.key:# Add automatic Melee defense
+                mods[dbref]["melee"]["defense"] += max([get_mod(char.dex()), get_mod(char.str())]) # TODO change to skill
+                mods[dbref]["general"]["penalty"] += 1
             if action == CmdShoot.key: # Queue a ranged attack
-                ranged_attacks[char.id].append((char, target))
+                attacks[dbref]["ranged"].append((char, target))
             if action == CmdStrike.key: # Queue melee attack
-                melee_attacks[char.id].append((char, target))
+                attacks[dbref]["melee"].append((char, target))
             if action == CmdDodge.key: # Add a general defense if dex check
-                general_defense[char.id] += 1 if simple_check(char.dex(), -2) else 0
+                mods[dbref]["general"]["defense"] += 1
+                mods[dbref]["general"]["penalty"] += 1
 
-    feedback["moves"]= resolve_moves(ch, moves)
-    feedback['dodge'] = melee_to_dodge(ch, melee_attacks, general_defense)
+    ordered_attacks = sort_attacks(attacks)
+    round = 0
+    for attacks in ordered_attacks.values():
+        ranged = attacks.get("ranged", []).get(round, None)
+        if ranged:
+            resolve_ranged_attack(ranged[0], ranged[1], mods)
+        melee = attacks.get("melee", []).get(round, None)
+        if melee:
+            resolve_melee_attack(melee[0], melee[1], mods)
+        round += 1
+        if round == 2: # At most there can only be 2 attacks.
+            break
+
     return feedback
 
-def resolve_ranged_attacks():
-    pass
-def resolve_melee_attacks():
-    pass
-
-def melee_to_dodge(ch, melee_attacks, general_defense):
+def sort_attacks(attacks):
     """
-    Any queue melee attacks on out of range opponents are converted to dodges.
+    Creates attack order sorted by initiative score, then dex and random if still tied.
     Args:
-        ch (CombatHandler): ch instance for fight.
-        melee_attacks (dict): dbref: [(char, target)] of character making attack.
-        general_defense (defaultdict(int)):  dbref: int of char and their defense bonus
+        attacks:
 
-    Return:  (Tuple) (
-            List of strings with dodge feedback.
-            Defaultdict(list) of actual melee attacks
-            )
+    Returns: OrderedDict based on initiative
 
     """
-    feedback = []
-    remaining_attacks = defaultdict(list)
-    for dbref, attacks in melee_attacks.iteritems():
-        for idx, attack in enumerate(attacks): # Iterate through attacks
-            attacker, target = attack
-            if ch.get_distance(attacker.id, target.id) > 1: # if target too far for melee ...
-                general_defense[attacker.id] += 1 if simple_check(attacker.dex(), -2) else 0 # dodge instead ...
-                attacks.pop(idx)
-                feedback.append("%s can't reach %s and dodges!" % (attacker, target)) # ... and let us know
-        melee_attacks[dbref] = [attack for attack in attacks if ch.get_distance(attack[0].id, attack[1].id) <= 1]
-    return list(set(feedback))
+    data = attacks.items()
+    shuffle(data) # This step creates random selction in case of init and dex tied
+    return OrderedDict(sorted(data, key=lambda x: (x[1]["init"], x[1]["dex"]), reverse=True))
 
-def resolve_moves(ch, moves):
+def _init_attacks(characters):
     """
-    Resolves all move actions from a single turn.  Does a simple dex check for each character attempting move to see if
-    successful, each combantant moves compared and aggregate constructed.
-
+    Initiates attack data for each character and returns the dict.
     Args:
-        ch (CombatHandler): Combat Handler to update character position.
-        mv (List): List of Tuple of actions (String), char (Character), target (Character) of moves to resolve.
+        characters: List of Character objects to initialize data for.
 
-    Returns: List of Strings of relative move changes.
+    Returns: dict format {dbref: {"init": int, "melee": [], "ranged": [], ...]},...}
 
     """
-    # Calculate results of each move attempt
-    results = defaultdict(lambda: defaultdict(int))
+    attacks = {}
+    for character in characters:
+        attacks[character.id] = {
+            "init": roll_attribute(character.dex()),
+            "dex": character.dex(),
+            "melee": [],
+            "ranged": []
+        }
+    return attacks
 
-    # Iterate over each move attempt.
-    for action, char, target in moves:
-        i = 1 if action == CmdRush.key else -1 # set distance change based on type of move.
-        chng = i if simple_check(char.dex()) else 0 # actual change value if success, 0 if failure
-        if chng: # only call if actual value changes
-            if ch.adjust_position(char.id, target.id, chng):
-                chng = 0 # Zero if method call fails as actual change would violate limits. i.e. no actual change.
-        keys = sorted([char.id, target.id]) # create a simple index for a deduped list of total changes.
-        results[keys[0]][keys[1]] += chng # this ensures same char combinations always added together once
+def _init_modifiers(characters):
+    """
+    Initiates attack modifier data for each character and returns the dict.
+    Args:
+        characters: List of Character objects to initialize data for.
 
-    # Create the feedback strings.
-    feedback = []
-    directions = ['move closer', 'circle each other', 'move apart', ]
-    for cid, mvs in results.iteritems():
-        for tid, chng in mvs.iteritems():
-            char = ch.db.characters[cid]
-            target = ch.db.characters[tid]
-            feedback.append("%s and %s %s." % (char, target, directions[chng]))
-    return feedback
+    Returns: dict format {dbref: {"melee": "penalty": 0, "bonus": 0, "defense": 0}
+
+    """
+    mods = {}
+    base = {"bonus": 0, "penalty": 0, "defense": 0}
+    for c in characters:
+        mods[c.id] = {
+            "general": base.copy(),
+            "melee": base.copy(),
+            "ranged": base.copy()
+        }
+    return mods
+
+def resolve_ranged_attack(attacker, target, mods):
+    # 2d6 + skill + ability mod + attacker ranged bonus + attacker general bonus - target ranged defense - target general defense
+    result = sum([
+        roll_attribute(attacker.dex()), # 2d6 + attacker ability mod
+        0, # Skill will go here
+        mods[attacker.id]["ranged"]["bonus"],
+        mods[attacker.id]["general"]["bonus"],
+        - mods[attacker.id]["ranged"]["penalty"],
+        - mods[attacker.id]["general"]["penalty"],
+        - mods[target.id]["ranged"]["defense"],
+        - mods[target.id]["general"]["defense"]
+    ])
+    if result > 7:
+        pass
+        # target.add_damage(1)
+        # msg attacker
+        # msg target
+
+def resolve_melee_attack(attacker, target, mods):
+    pass
+

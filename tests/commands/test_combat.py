@@ -60,22 +60,10 @@ class CmdRushTestCase(CommandTest):
         c2 = self.char2
         c1.execute_cmd("attack %s" % c2)
 
-        for i in range(3):
-            self.call(combat.CmdRush(), "%s" % c2, "You try to move closer to %s." % c2)
-        self.call(combat.CmdRush(), "%s" % c2, "You can only queue 3 actions in a turn.")
+        for i in range(2):
+            self.call(combat.CmdRush(), "%s" % c2, "You rush your attacks recklessly.")
+        self.call(combat.CmdRush(), "%s" % c2, combat.MSG_MAX_COMMANDS)
 
-# class CmdRetreatTestCase(CommandTest):
-#     character_typeclass = Character
-#
-#     def test_cmd(self):
-#         c1 = self.char1
-#         c2 = self.char2
-#         c1.execute_cmd("attack %s" % c2)
-#
-#         for i in range(3):
-#             self.call(combat.CmdRetreat(), "%s" % c2, "You try to move away from %s." % c2)
-#         self.call(combat.CmdRetreat(), "%s" % c2, "You can only queue 3 actions in a turn.")
-#
 # class CmdDodgeTestCase(CommandTest):
 #     character_typeclass = Character
 #
@@ -88,19 +76,7 @@ class CmdRushTestCase(CommandTest):
 #             self.call(combat.CmdDodge(), "", "You try to dodge all attacks.")
 #         self.call(combat.CmdDodge(), "%s" % c2, "You can only queue 3 actions in a turn.")
 #
-# class CmdCoverTestCase(CommandTest):
-#     character_typeclass = Character
-#
-#     def test_cmd(self):
-#         c1 = self.char1
-#         c2 = self.char2
-#         c1.execute_cmd("attack %s" % c2)
-#
-#         for i in range(3):
-#             self.call(combat.CmdCover(), "", "You duck behind cover.")
-#         self.call(combat.CmdCover(), "%s" % c2, "You can only queue 3 actions in a turn.")
-#
-# class CmdBlockTestCase(CommandTest):
+# class CmdParryTestCase(CommandTest):
 #     character_typeclass = Character
 #
 #     def test_cmd(self):

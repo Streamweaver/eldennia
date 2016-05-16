@@ -6,22 +6,7 @@ from evennia import DefaultScript
 from world.rules.resolvers import resolve_combat_turn
 
 MSG_AUTO_TURN_END = "Turn ending automatically.  Continuing ..."
-MSG_TURN_END = "{M Next turn begins!  Choose 3 actions ..."
-
-class Distance(IntEnum):
-    Personal = 0
-    Close = 1
-    Short = 2
-    Medium = 3
-    Long = 4
-    Far = 5
-    Extreme = 6
-
-
-class Direction(IntEnum):
-    Back = -1
-    Steady = 0
-    Forward = 1
+MSG_TURN_END = "{M Next turn begins!  Choose 2 actions ..."
 
 class CombatHandlerExecption(Exception):
     pass
@@ -39,9 +24,6 @@ class CombatHandler(DefaultScript):
         self.persistant = True
 
         self.db.characters = {} # {dbref: Character, ...}
-        self.db.distance_max = Distance.Extreme
-        self.db.distance_min = Distance.Close
-        self.db.positions = {} # {dbref: {dbref: int, dbref: int, ...}, ... }
         self.db.actions = {} # {dbref: [('actionstring', caller, target), ...], ...}
 
     def at_start(self):
@@ -79,20 +61,12 @@ class CombatHandler(DefaultScript):
         del self.db.characters[dbref]
         del self.db.actions[dbref]
         del character.ndb.combat_handler
-        del self.db.positions[dbref]
-        for combatant in self.db.positions.values():
-            del combatant[dbref]
         character.cmdset.delete("commands.combat.CombatCmdSet")
         character.msg("You are no longer in combat.")
 
     def add_character(self, character):
         "Add character to combat"
         dbref = character.id
-        self.db.positions[dbref] = {}
-        for combatant in self.db.characters.values():
-            pos = randint(self.db.distance_min, self.db.distance_max)
-            self.db.positions[dbref][combatant.id] = pos
-            self.db.positions[combatant.id][dbref] = pos
         self.db.characters[dbref] = character
         self.db.actions[dbref] = []
         self._init_character(character)
@@ -119,7 +93,7 @@ class CombatHandler(DefaultScript):
 
         """
         queue = self.db.actions[character.id]
-        if 0 <= len(queue) <= 2:  # only allow 3 actions
+        if 0 <= len(queue) <= 1:  # only allow 2 actions
             queue.append((action, character, target))
             self._check_end_turn()  # check if everyone has entered commands
             return True
@@ -139,7 +113,7 @@ class CombatHandler(DefaultScript):
         self.end_turn()
 
     def _check_end_turn(self):
-        if all(len(actions) == 3 for actions in self.db.actions.values()):
+        if all(len(actions) == 2 for actions in self.db.actions.values()):
             self.at_repeat("endturn")
 
     def end_turn(self):
@@ -152,89 +126,3 @@ class CombatHandler(DefaultScript):
             for dbref in self.db.actions.keys():
                 self.db.actions[dbref] = []
             self.msg_all(MSG_TURN_END)
-
-    #--- MOVEMENT
-    def set_distance(self, dmax=Distance.Extreme, dmin=Distance.Close):
-        """
-        Sets the values for the boundaries of relative distance for combatants in the
-        combat space.
-
-        Args:
-            dmax: int of maxium distance
-            dmin: int of minimum distance
-
-        """
-        if dmax <= dmin:
-            raise CombatHandlerExecption("Distances supplied are invalid.")
-        if dmax > Distance.Extreme:
-            raise CombatHandlerExecption("Max distance execeeds range")
-        if dmin < Distance.Personal:
-            raise CombatHandlerExecption("Min distance exceeds range")
-
-        # Set distance boundaries
-        self.db.distance_max = dmax
-        self.db.distance_min = dmin
-
-        # If character current distances violate this, modify them.  Edge case of morphing
-        # rooms.
-        for cref, positions in self.db.positions.iteritems():
-            for tref, distance in positions.iteritems():
-                distance = self.db.positions[cref][tref]
-                if distance > self.db.distance_max:
-                    self.db.positions[cref][tref] = self.db.distance_max
-                if distance < self.db.distance_min:
-                    self.db.positions[cref][tref] = self.db.distance_min
-
-    def adjust_position(self, dbref1, dbref2, change):
-        """
-        Adjusts relative position of two combatants
-
-        Args:
-            dbref1:  dbref of  chracter 1
-            dbref2:  dbref of character 2
-            change: int of distance increment to change range, positive or negative
-
-        Return:  Boolean of weather the position was actually changed.  False if ecxeeds boundaries.
-
-        """
-        new_position = self.db.positions[dbref1][dbref2] + change
-        if new_position > self.db.distance_max:
-            return False
-        if new_position < self.db.distance_min:
-            return False
-        self.db.positions[dbref1][dbref2] = new_position
-        self.db.positions[dbref2][dbref1] = new_position
-        return True
-
-    def get_distance(self, dbref1, dbref2):
-        """
-        Returns the relative position of two characters.
-
-        Args:
-            dbref1: dbref of char1
-            dbref2: dbref of char2
-
-        Returns: Int of relative distance between characters.
-
-        """
-        try:
-            return self.db.positions[dbref1][dbref2]
-        except KeyError:
-            raise CombatHandlerExecption("Character with dbref does not have a position")
-
-    def msg_positions(self, character):
-        """
-        Messages each combatant with the names of other combatants and their relative positions.
-
-        Args:
-            character (Character): char object to message
-
-        """
-        # positions = [[self.db.characters[tid], pos] for tid, pos in self.db.positions[character.id].iteritems()]
-        positions = []
-        for tid, pos in self.db.positions[character.id].iteritems():
-            positions.append("%s(%s)" % (self.db.characters[tid], Distance(pos).name))
-        if positions:
-            plural = "s" if len(positions) > 1 else ""
-            character.msg("Target%s(Range): " % plural + ", ".join(positions))
-
