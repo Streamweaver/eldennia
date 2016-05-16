@@ -5,7 +5,7 @@ from evennia.utils.test_resources import EvenniaTest
 from evennia import create_script
 
 from commands.combat import CmdRush, CmdStrike, CmdParry, CmdShoot, CmdAim, CmdDodge, CmdAttack
-from world.rules.resolvers import resolve_combat_turn, sort_attacks
+from world.rules.resolvers import resolve_combat_turn, sort_attacks, resolve_ranged_attack, resolve_melee_attack
 from typeclasses.characters import Character
 from typeclasses.rooms import Room
 
@@ -70,3 +70,21 @@ class ResolversTestCase(EvenniaTest):
         self.assertIn(exp.index(8), [2, 3])
         self.assertEqual(exp.index(9), 4)
         self.assertIn(exp.index(10), [2, 3])
+
+    def test_resolve_ranged_attack(self):
+        c1 = self.char1
+        c2 = self.char2
+        mods = {}
+        base = {"bonus": 0, "penalty": 0, "defense": 0}
+        for c in [c1, c2]:
+            mods[c.id] = {
+                    "general": base.copy(),
+                    "melee": base.copy(),
+                    "ranged": base.copy()
+                }
+        for _ in range(100):
+            resolve_ranged_attack(c1, c2, mods)
+            resolve_ranged_attack(c2, c1, mods)
+
+        self.assertTrue(c1.wounds() > 0)
+        self.assertTrue(c2.wounds() > 0)

@@ -44,4 +44,7 @@ def roll_attribute(attrib, mods=0):
     """
     return roll_dice(2, 6) + get_mod(attrib) + mods
 
+def get_effect(value):
+    return value - 8
+
 

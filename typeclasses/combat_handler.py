@@ -117,12 +117,15 @@ class CombatHandler(DefaultScript):
             self.at_repeat("endturn")
 
     def end_turn(self):
+        # Resolve actions
+        resolve_combat_turn(self)
+        for dbref in self.db.actions.keys():
+            self.db.actions[dbref] = []
+        self.msg_all(MSG_TURN_END)
+        for c in self.db.characters.values():
+            if c.is_incapacitated():
+                self.msg_all("%s is knocked out.")
+                self.remove_character(c)
         if len(self.db.characters) < 2:
             self.msg_all("Combat has ended.")
             self.stop()
-        else:
-            # Resolve actions
-            resolve_combat_turn(self)
-            for dbref in self.db.actions.keys():
-                self.db.actions[dbref] = []
-            self.msg_all(MSG_TURN_END)
