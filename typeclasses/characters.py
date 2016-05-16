@@ -7,6 +7,7 @@ is setup to be the "default" character type created by the default
 creation commands.
 
 """
+import random
 from evennia import DefaultCharacter
 from evennia.contrib.dice import roll_dice
 
@@ -49,19 +50,26 @@ class Character(DefaultCharacter):
         self.db.soc = _gen_stat()
 
         self.db.credits = 0
+        self.db.wounds = {'str': 0, 'dex': 0, 'end': 0}
         # Derived Attributes
 
 
     # Attributes
     def str(self):
-        "Returns effective agility"
-        return int(self.db.str)
+        "Returns effective strength"
+        total = self.db.str - self.db.wounds["str"]
+        total = total if total > -1 else 0
+        return total
 
     def dex(self):
-        return int(self.db.dex)
+        total = self.db.dex - self.db.wounds["dex"]
+        total = total if total > -1 else 0
+        return total
 
     def end(self):
-        return int(self.db.end)
+        total = self.db.end - self.db.wounds["end"]
+        total = total if total > -1 else 0
+        return total
 
     def int(self):
         return int(self.db.int)
@@ -72,21 +80,48 @@ class Character(DefaultCharacter):
     def soc(self):
         return int(self.db.soc)
 
-    # Derived Attributes
+    # Damage & Wounds
     def health(self):
-        v = self.db.health - self.db.wounds
-        if v > 0:
-            return v
-        return 0
+        """
+        Total damage character can sustain.
 
-    def mana(self):
-        v = self.db.mana - self.db.drain
-        if v > 0:
-            return v
-        return 0
+        """
+        return sum([self.db.end, self.db.str, self.db.dex])
 
-    def stamina(self):
-        v = self.db.stamina - self.db.fatigue
-        if v > 0:
-            return v
-        return 0
+    def wounds(self):
+        """
+        Total damage character has recieved.
+
+        """
+        return sum(self.db.wounds.values())
+
+    def is_incapacitated(self):
+        """
+        Indicates if the character is uncontious.
+
+        Returns: Boolean if wounds equal or exceed health.
+
+        """
+        if self.wounds() >= self.health():
+            return True
+        return False
+
+    def add_damage(self, dmg):
+        # apply to end, if out then random to st or dex
+        # total damage = total stats then out
+        for _ in range(dmg):
+            alt_stats = []
+            if self.db.dex - self.db.wounds["dex"] > 0:
+                alt_stats.append("dex")
+            if self.db.str - self.db.wounds["str"] > 0:
+                alt_stats.append("str")
+            if self.db.end - self.db.wounds["end"] > 0:
+                self.db.wounds["end"] += 1
+            elif alt_stats:
+                stat = random.choice(alt_stats)
+                stat_value = getattr(self.db, stat)
+                if stat_value - self.db.wounds[stat] > 0:
+                    self.db.wounds[stat] += 1
+            else:
+                break
+
