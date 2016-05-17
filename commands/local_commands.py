@@ -24,9 +24,9 @@ class CmdAbilities(MuxCommand):
     def func(self):
         "executes command"
         abilities = [
-            "STR: %i" % self.caller.str(),
-            "DEX: %i" % self.caller.dex(),
-            "END: %i" % self.caller.end(),
+            "STR: %i/%i" % (self.caller.db.str, self.caller.str()),
+            "DEX: %i/%i" % (self.caller.db.dex, self.caller.dex()),
+            "END: %i/%i" % (self.caller.db.end, self.caller.end()),
             "INT: %i" % self.caller.int(),
             "EDU: %i" % self.caller.edu(),
             "SOC: %i" % self.caller.soc()

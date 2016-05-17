@@ -208,7 +208,7 @@ class CmdStrike(MuxCommand):
                                                        self.caller,
                                                        target)
         if ok:
-            self.caller.msg("You shoot at %s." % target)
+            self.caller.msg("You strike at %s." % target)
         else:
             self.caller.msg(MSG_MAX_COMMANDS)
 
