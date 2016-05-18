@@ -1,0 +1,16 @@
+[
+  {
+    "athletics":
+  {
+    "name": "Athletics",
+    "base": "DEX",
+    "desc": "|mAthletics|n skill at moving and menuvering."
+  }
+  "test":
+  {
+    "name": "Test",
+    "base": "INT",
+    "desc": "|mTest|n this is a test skill."
+  }
+ }
+]
