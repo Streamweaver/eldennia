@@ -15,15 +15,6 @@ from ainneve.world.traits import TraitHandler
 
 _stats = ('STR', 'END', 'DEX', 'INT', 'EDU', 'SOC')
 
-def _gen_stat():
-    """
-    Dirty method for random stat generation.
-
-    Returns: int between 2-12
-
-    """
-    return max(roll_dice(2, 6), roll_dice(2, 6))
-
 class Character(DefaultCharacter):
     """
     The Character defaults to reimplementing some of base Object's hook methods with the
@@ -46,21 +37,16 @@ class Character(DefaultCharacter):
     """
     def at_object_creation(self):
         self.db.race = None
-        self.db.homeworld = None
         self.db.age = 0
         self.db.credits = 0
 
     @lazy_property
-    def stats(self):
-        return TraitHandler(self, db_attribute="stats")
+    def traits(self):
+        return TraitHandler(self)
 
     @lazy_property
     def skills(self):
         return TraitHandler(self, db_attribute="skills")
-
-    @lazy_property
-    def specializations(self):
-        return TraitHandler(self, db_attribute="specializations")
 
     # Saving this becuse worked out dividing damage up.
     # def add_damage(self, dmg):
