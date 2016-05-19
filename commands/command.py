@@ -8,7 +8,6 @@ Commands describe the input the player can do to the game.
 from evennia import Command as BaseCommand
 from evennia import default_cmds
 
-
 class Command(BaseCommand):
     """
     Inherit from this if you want to create your own
@@ -136,3 +135,4 @@ class MuxCommand(default_cmds.MuxCommand):
         # this can be removed in your child class, it's just
         # printing the ingoing variables as a demo.
         super(MuxCommand, self).func()
+        pass # TODO prompt conditionals

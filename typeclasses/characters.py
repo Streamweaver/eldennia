@@ -7,7 +7,13 @@ is setup to be the "default" character type created by the default
 creation commands.
 
 """
+import random
 from evennia import DefaultCharacter
+from evennia.contrib.dice import roll_dice
+from evennia.utils.utils import lazy_property
+from ainneve.world.traits import TraitHandler
+
+_stats = ('STR', 'END', 'DEX', 'INT', 'EDU', 'SOC')
 
 class Character(DefaultCharacter):
     """
@@ -22,11 +28,43 @@ class Character(DefaultCharacter):
     at_post_unpuppet(player) -  when Player disconnects from the Character, we
                     store the current location in the pre_logout_location Attribute and
                     move it to a None-location so the "unpuppeted" character
-                    object does not need to stay on grid. Echoes "Player has disconnected" 
+                    object does not need to stay on grid. Echoes "Player has disconnected"
                     to the room.
     at_pre_puppet - Just before Player re-connects, retrieves the character's
                     pre_logout_location Attribute and move it back on the grid.
     at_post_puppet - Echoes "PlayerName has entered the game" to the room.
 
     """
-    pass
+    def at_object_creation(self):
+        self.db.race = None
+        self.db.age = 0
+        self.db.credits = 0
+
+    @lazy_property
+    def traits(self):
+        return TraitHandler(self)
+
+    @lazy_property
+    def skills(self):
+        return TraitHandler(self, db_attribute="skills")
+
+    # Saving this becuse worked out dividing damage up.
+    # def add_damage(self, dmg):
+    #     # apply to end, if out then random to st or dex
+    #     # total damage = total stats then out
+    #     for _ in range(dmg):
+    #         alt_stats = []
+    #         if self.db.dex - self.db.wounds["dex"] > 0:
+    #             alt_stats.append("dex")
+    #         if self.db.str - self.db.wounds["str"] > 0:
+    #             alt_stats.append("str")
+    #         if self.db.end - self.db.wounds["end"] > 0:
+    #             self.db.wounds["end"] += 1
+    #         elif alt_stats:
+    #             stat = random.choice(alt_stats)
+    #             stat_value = getattr(self.db, stat)
+    #             if stat_value - self.db.wounds[stat] > 0:
+    #                 self.db.wounds[stat] += 1
+    #         else:
+    #             break
+

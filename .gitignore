@@ -17,6 +17,7 @@ develop-eggs
 lib
 lib64
 __pycache__
+src/*
 
 # Other
 *.swp
@@ -51,3 +52,6 @@ nosetests.xml
 
 # PyCharm config
 .idea
+
+# virtualenv
+.venv/*

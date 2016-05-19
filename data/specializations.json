@@ -1,0 +1,17 @@
+{
+    "blade": {
+        "name": "Blade",
+        "base": "melee",
+        "desc": "|mBlade|n specialty skill at using bladed and cutting weapons."
+    },
+    "unarmed": {
+        "name": "Unarmed",
+        "base": "melee",
+        "desc": "|mUnarmed|n specialty skill at hand to hand combat.  Also covers  combat with improvised weapons."
+    },
+    "pistols": {
+        "name": "Pistols",
+        "base": "pistols",
+        "desc": "|mPistols|n specility in using pistol weapons"
+    }
+}
